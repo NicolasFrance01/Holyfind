@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>HolyFind</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <link rel="stylesheet" href="/static/css/style.css" />
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  </head>
+  <body>
+    <h1>HolyMap</h1>
+    <p class="mensaje-bienvenida">“Si no podés ir a tu iglesia, dejá que la fe te guíe desde donde estés.”</p>
+
+    <button id="solicitarBtn">Solicitar nueva iglesia</button>
+
+    <label for="filtroIglesia">Filtrar por tipo:</label>
+    <select id="filtroIglesia">
+      <option value="todas">Todas</option>
+      <option value="christian">Cristianas Evangélicas</option>
+      <option value="catholic">Católicas</option>
+    </select>
+
+    <div id="map"></div>
+
+    <!-- Popup del formulario -->
+    <div id="formPopup" class="popup">
+      <form id="solicitudForm">
+        <h2>Solicitar Iglesia</h2>
+        <input type="text" name="nombre" placeholder="Nombre de la iglesia" required><br>
+        <input type="text" name="direccion" placeholder="Dirección"><br>
+        <input type="file" name="logo"><br>
+        <input type="file" name="imagenes" multiple><br>
+        <textarea name="comentarios" placeholder="Información adicional..."></textarea><br>
+        <button type="submit">Enviar solicitud</button>
+        <button type="button" id="cerrarPopup">Cancelar</button>
+      </form>
+    </div>
+
+    <!-- Scripts principales -->
+    <script src="/static/js/script.js"></script>
+
+    <!-- Cargar el modal admin dinámicamente y luego su JS -->
+    <script>
+      fetch("/static/components/admin_modal.html")
+        .then(res => res.text())
+        .then(html => {
+          document.body.insertAdjacentHTML("beforeend", html);
+          // ✅ Solo después de insertar el modal cargamos admin.js
+          const script = document.createElement("script");
+          script.src = "/static/js/admin.js";
+          document.body.appendChild(script);
+        })
+        .catch(err => {
+          console.error("Error cargando el modal de administrador:", err);
+        });
+    </script>
+  </body>
+</html>
