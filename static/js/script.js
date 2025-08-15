@@ -69,7 +69,7 @@ function fetchIglesias(map, lat, lon, filtro = "todas") {
 
   let modificaciones = [];
 
-  fetch("/static/data/modificaciones.json")
+  fetch("/Holyfind/static/data/modificaciones.json")
     .then(res => res.json())
     .then(data => {
       modificaciones = data;
@@ -103,7 +103,7 @@ function fetchIglesias(map, lat, lon, filtro = "todas") {
 
             const name = mod?.nombre || el.tags.name || "Iglesia sin nombre";
             const descripcion = mod?.descripcion || generarDescripcion(el.tags);
-            const iconUrl = mod?.icono || "/static/img/churchCris-removebg-preview.png";
+            const iconUrl = mod?.icono || "/Holyfind/static/img/churchCris-removebg-preview.png";
 
             const popup = `
               <b>${name}</b><br>
@@ -130,7 +130,7 @@ function fetchIglesias(map, lat, lon, filtro = "todas") {
 }
 
 function loadLocalIglesias(map, filtro = "todas") {
-  fetch("/static/data/iglesias.json")
+  fetch("/Holyfind/static/data/iglesias.json")
     .then(res => res.json())
     .then(data => {
       data.forEach((igle) => {
@@ -154,7 +154,7 @@ function loadLocalIglesias(map, filtro = "todas") {
 
         L.marker([igle.lat, igle.lon], {
           icon: L.icon({
-            iconUrl: igle.logo || "/static/img/default.png",
+            iconUrl: igle.logo || "/Holyfind/static/img/default.png",
             iconSize: [30, 30]
           }),
           customMarker: true
@@ -177,3 +177,4 @@ function generarDescripcion(tags) {
     return `<i>Sin denominación definida</i>`;
   }
 }
+
