@@ -6,7 +6,7 @@
     "tipo": "catholic",
     "direccion": "Mercado Norte, Córdoba",
     "horarios": "Dom 10:00 y 19:00",
-    "logo": "/static/img/Merced.png"
+    "logo": "/static/img/default.png"
   },
   {
     "nombre": "Iglesia Jesús es Vida",
@@ -24,7 +24,7 @@
     "tipo": "christian",
     "direccion": "Córdoba 456",
     "horarios": "Dom 9:00 y 18:00",
-    "logo": "/static/img/jose.png"
+    "logo": "/static/img/default.png"
   },
   {
     "nombre": "Resplandece",
@@ -45,5 +45,6 @@
     "logo": "/static/img/aviva/aviva.png"
   }
 ]
+
 
 
