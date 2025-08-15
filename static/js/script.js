@@ -69,7 +69,7 @@ function fetchIglesias(map, lat, lon, filtro = "todas") {
 
   let modificaciones = [];
 
-  fetch("/Holyfind/static/data/modificaciones.json")
+  fetch("/static/data/modificaciones.json")
     .then(res => res.json())
     .then(data => {
       modificaciones = data;
@@ -103,7 +103,7 @@ function fetchIglesias(map, lat, lon, filtro = "todas") {
 
             const name = mod?.nombre || el.tags.name || "Iglesia sin nombre";
             const descripcion = mod?.descripcion || generarDescripcion(el.tags);
-            const iconUrl = mod?.icono || "/Holyfind/static/img/churchCris-removebg-preview.png";
+            const iconUrl = mod?.icono || "/static/img/churchCris-removebg-preview.png";
 
             const popup = `
               <b>${name}</b><br>
@@ -130,7 +130,7 @@ function fetchIglesias(map, lat, lon, filtro = "todas") {
 }
 
 function loadLocalIglesias(map, filtro = "todas") {
-  fetch("/Holyfind/static/data/iglesias.json")
+  fetch("/static/data/iglesias.json")
     .then(res => res.json())
     .then(data => {
       data.forEach((igle) => {
@@ -177,4 +177,5 @@ function generarDescripcion(tags) {
     return `<i>Sin denominación definida</i>`;
   }
 }
+
 
