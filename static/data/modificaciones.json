@@ -6,13 +6,14 @@
     "nombre": "Iglesia Bautista evangelica",
     "descripcion": "Cultos los domingos a las 10:30 hs y reuniones de oración los miércoles a las 20:00 hs.",
     "direccion": "Av. Colón 1133",
-    "icono": "/static/img/resplandece/llamarespla.png"
+    "icono": "/Holyfind/static/img/resplandece/llamarespla.png"
   },
   {
     "lat": -31.4211,
     "lon": -64.1887,
     "nombre": "Centro Cristiano Luz de Vida",
     "descripcion": "Reuniones de jóvenes viernes 20hs. Culto general domingos 10:00hs.",
-    "icono": "/static/img/luzdevida.png"
+    "icono": "/Holyfind/static/img/luzdevida.png"
   }
 ]
+
