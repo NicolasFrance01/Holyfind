@@ -3,7 +3,7 @@
   <head>
     <title>HolyFind</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
-    <link rel="stylesheet" href="/Holyfind/static/css/style.css" />
+    <link rel="stylesheet" href="/static/css/style.css" />
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
   </head>
   <body>
@@ -36,17 +36,17 @@
     </div>
 
     <!-- Scripts principales -->
-    <script src="/Holyfind/static/js/script.js"></script>
+    <script src="/static/js/script.js"></script>
 
     <!-- Cargar el modal admin dinámicamente y luego su JS -->
     <script>
-      fetch("/Holyfind/static/components/admin_modal.html")
+      fetch("/static/components/admin_modal.html")
         .then(res => res.text())
         .then(html => {
           document.body.insertAdjacentHTML("beforeend", html);
           // ✅ Solo después de insertar el modal cargamos admin.js
           const script = document.createElement("script");
-          script.src = "/Holyfind/static/js/admin.js";
+          script.src = "/static/js/admin.js";
           document.body.appendChild(script);
         })
         .catch(err => {
@@ -55,3 +55,4 @@
     </script>
   </body>
 </html>
+
