@@ -6,7 +6,7 @@
     "tipo": "catholic",
     "direccion": "Mercado Norte, Córdoba",
     "horarios": "Dom 10:00 y 19:00",
-    "logo": "/static/img/default.png"
+    "logo": "/Holyfind/static/img/default.png"
   },
   {
     "nombre": "Iglesia Jesús es Vida",
@@ -15,7 +15,7 @@
     "tipo": "christian",
     "direccion": "Av. Sabattini 123",
     "horarios": "Dom 11:00 / Mié 20:00",
-    "logo": "/static/img/default.png"
+    "logo": "/Holyfind/static/img/default.png"
   },
   {
     "nombre": "Parroquia San José",
@@ -24,7 +24,7 @@
     "tipo": "christian",
     "direccion": "Córdoba 456",
     "horarios": "Dom 9:00 y 18:00",
-    "logo": "/static/img/default.png"
+    "logo": "/Holyfind/static/img/default.png"
   },
   {
     "nombre": "Resplandece",
@@ -33,7 +33,7 @@
     "tipo": "christian",
     "direccion": "Domingo F. Sarmiento 2105",
     "horarios": "Sab 21hs a 23hs y Dom 19hs a 21hs",
-    "logo": "/static/img/resplandece/resplallama.png"
+    "logo": "/Holyfind/static/img/resplandece/resplallama.png"
   },
   {
     "nombre": "Aviva",
@@ -42,9 +42,10 @@
     "tipo": "christian",
     "direccion": "Rivadavia 343",
     "horarios": "Sab 21hs a 23hs y Dom 19hs a 21hs",
-    "logo": "/static/img/aviva/aviva.png"
+    "logo": "/Holyfind/static/img/aviva/aviva.png"
   }
 ]
+
 
 
 
