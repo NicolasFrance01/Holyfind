@@ -5,9 +5,9 @@ function abrirEditorIglesia(lat, lon) {
     document.getElementById("coordLon").value = lon;
 
     Promise.all([
-        fetch("/static/data/modificaciones.json").then(r => r.json()),
-        fetch("/static/data/galeria.json").then(r => r.json()),
-        fetch("/static/data/eventos.json").then(r => r.json())
+        fetch("/Holyfind/static/data/modificaciones.json").then(r => r.json()),
+        fetch("/Holyfind/static/data/galeria.json").then(r => r.json()),
+        fetch("/Holyfind/static/data/eventos.json").then(r => r.json())
     ]).then(([mods, fotos, eventos]) => {
     const id = `${lat.toFixed(5)}_${lon.toFixed(5)}`;
 
@@ -117,3 +117,4 @@ function eliminarEvento(idx) {
     window.eventosActuales.splice(idx, 1);
     renderizarEventos();
 }
+
