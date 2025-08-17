@@ -14,6 +14,25 @@
     "nombre": "Centro Cristiano Luz de Vida",
     "descripcion": "Reuniones de jóvenes viernes 20hs. Culto general domingos 10:00hs.",
     "icono": "/Holyfind/static/img/luzdevida.png"
+  },
+  {
+    "nombre": "Resplandece",
+    "lat": -31.40738,
+    "lon": -64.15666,
+    "tipo": "christian",
+    "direccion": "Domingo F. Sarmiento 2105",
+    "horarios": "Sab 21hs a 23hs y Dom 19hs a 21hs",
+    "logo": "/Holyfind/static/img/resplandece/resplallama.png"
+  },
+  {
+    "nombre": "Aviva",
+    "lat": -31.40929, 
+    "lon": -64.18234,
+    "tipo": "christian",
+    "direccion": "Rivadavia 343",
+    "horarios": "Sab 21hs a 23hs y Dom 19hs a 21hs",
+    "logo": "/Holyfind/static/img/aviva/aviva.png"
   }
 ]
+
 
