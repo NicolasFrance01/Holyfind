@@ -130,7 +130,7 @@ function fetchIglesias(map, lat, lon, filtro = "todas") {
 }
 
 function loadLocalIglesias(map, filtro = "todas") {
-  fetch("/static/data/iglesias.json")
+  fetch("/Holyfind/static/data/iglesias.json")
     .then(res => res.json())
     .then(data => {
       data.forEach((igle) => {
@@ -177,6 +177,7 @@ function generarDescripcion(tags) {
     return `<i>Sin denominación definida</i>`;
   }
 }
+
 
 
 
