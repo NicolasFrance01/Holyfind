@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import MapsViewClient from "./MapsViewClient";
 
-export const revalidate = 60; // Revalidate every 60 seconds
+export const dynamic = 'force-dynamic'; // Prevent prerendering at build time
 
 export default async function MapsPage() {
   const churches = await prisma.church.findMany({
