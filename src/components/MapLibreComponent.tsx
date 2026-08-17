@@ -23,7 +23,7 @@ type Props = {
 };
 
 // Dark map style using reliable raster tiles to avoid CORS/HTTPS issues on Vercel
-const MAP_STYLE = {
+const MAP_STYLE: any = {
   version: 8,
   sources: {
     "carto-dark": {
