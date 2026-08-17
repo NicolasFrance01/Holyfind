@@ -95,6 +95,7 @@ export default function MapLibreComponent({ churches, targetLocation, selectedCh
   return (
     <div style={{ position: "relative", width: "100%", height: "100%" }}>
       <Map
+        ref={mapRef}
         initialViewState={{
           longitude: -63.0,
           latitude: -34.0,
@@ -103,6 +104,7 @@ export default function MapLibreComponent({ churches, targetLocation, selectedCh
         style={{ width: "100%", height: "100%" }}
         mapStyle={MAP_STYLE}
         onLoad={handleMapLoad}
+        attributionControl={false}
       >
         {/* Controls */}
         <NavigationControl

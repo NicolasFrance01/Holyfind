@@ -29,6 +29,7 @@ export default function MapsViewClient({ initialChurches }: { initialChurches: C
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [targetLocation, setTargetLocation] = useState<{lat: number, lng: number} | null>(null);
   const [selectedChurchId, setSelectedChurchId] = useState<string | null>(null);
+  const [isPlaceSelected, setIsPlaceSelected] = useState(false);
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
@@ -77,7 +78,9 @@ export default function MapsViewClient({ initialChurches }: { initialChurches: C
   }, [searchTerm, initialChurches]);
 
   const filteredChurches = initialChurches.filter((church) => {
-    const matchesSearch =
+    // If a generic place is selected, we don't want to hide churches in that place,
+    // so we skip the text search filter.
+    const matchesSearch = isPlaceSelected || !searchTerm ||
       church.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       church.address.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesType = filterType === "Todas" || church.type === filterType;
@@ -99,10 +102,12 @@ export default function MapsViewClient({ initialChurches }: { initialChurches: C
     }
     
     if (sug.type === 'church') {
+      setIsPlaceSelected(false);
       setSelectedChurchId(sug.id);
       // Ensure the sidebar opens to show the selected church
       setSidebarOpen(true);
     } else {
+      setIsPlaceSelected(true);
       setSelectedChurchId(null);
     }
   };
@@ -136,6 +141,7 @@ export default function MapsViewClient({ initialChurches }: { initialChurches: C
             value={searchTerm}
             onChange={(e) => {
               setSearchTerm(e.target.value);
+              setIsPlaceSelected(false);
               setShowSuggestions(true);
             }}
             onFocus={() => setShowSuggestions(true)}
