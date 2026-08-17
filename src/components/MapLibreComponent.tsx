@@ -54,12 +54,83 @@ export default function MapLibreComponent({ churches, targetLocation, selectedCh
   const geolocateRef = useRef<any>(null);
   const mapRef = useRef<MapRef>(null);
 
-  const handleMapLoad = useCallback(() => {
+  // OSM state
+  const [osmChurches, setOsmChurches] = useState<Church[]>([]);
+  const [isFetchingOSM, setIsFetchingOSM] = useState(false);
+
+  const fetchOSMChurches = async (bounds: any) => {
+    if (!bounds) return;
+    setIsFetchingOSM(true);
+    try {
+      const south = bounds.getSouth();
+      const west = bounds.getWest();
+      const north = bounds.getNorth();
+      const east = bounds.getEast();
+      
+      const query = `
+        [out:json][timeout:10];
+        (
+          node["amenity"="place_of_worship"]["religion"="christian"](${south},${west},${north},${east});
+          way["amenity"="place_of_worship"]["religion"="christian"](${south},${west},${north},${east});
+        );
+        out center;
+      `;
+      
+      const res = await fetch("https://overpass-api.de/api/interpreter", {
+        method: "POST",
+        body: "data=" + encodeURIComponent(query)
+      });
+      const data = await res.json();
+      
+      const parsedChurches: Church[] = data.elements.map((el: any) => {
+        const lat = el.lat || el.center?.lat;
+        const lon = el.lon || el.center?.lon;
+        const name = el.tags?.name || "Iglesia (OSM)";
+        const denom = el.tags?.denomination || "";
+        
+        let type = "Otra";
+        if (denom.toLowerCase().includes("catholic")) type = "Católica";
+        else if (denom.toLowerCase().includes("evangelical") || denom.toLowerCase().includes("protestant")) type = "Cristiana Evangélica";
+
+        return {
+          id: `osm-${el.id}`,
+          name: name,
+          address: "Ubicación de OpenStreetMap",
+          latitude: lat,
+          longitude: lon,
+          type: type,
+          description: "Esta ubicación fue encontrada automáticamente vía OpenStreetMap.",
+          imageUrl: null
+        };
+      }).filter((c: any) => c.latitude && c.longitude);
+
+      setOsmChurches(parsedChurches);
+    } catch (error) {
+      console.error("Failed to fetch OSM churches", error);
+    } finally {
+      setIsFetchingOSM(false);
+    }
+  };
+
+  const handleMoveEnd = useCallback((e: any) => {
+    const map = e.target;
+    if (map.getZoom() > 11) {
+      fetchOSMChurches(map.getBounds());
+    } else {
+      setOsmChurches([]);
+    }
+  }, []);
+
+  const handleMapLoad = useCallback((e: any) => {
     // Auto-trigger geolocation on map load if no target is provided initially
     if (!targetLocation) {
       setTimeout(() => {
         geolocateRef.current?.trigger();
       }, 500);
+    }
+    // Also fetch initial OSM if zoomed in
+    if (e.target.getZoom() > 11) {
+      fetchOSMChurches(e.target.getBounds());
     }
   }, [targetLocation]);
 
@@ -86,6 +157,18 @@ export default function MapLibreComponent({ churches, targetLocation, selectedCh
     (c) => c.latitude !== null && c.longitude !== null
   );
 
+  // Combine DB churches with OSM churches, preventing duplicates loosely by name/proximity
+  const combinedChurches = [...validChurches];
+  for (const osm of osmChurches) {
+    const isDuplicate = validChurches.some(vc => 
+      Math.abs(vc.latitude! - osm.latitude!) < 0.005 && 
+      Math.abs(vc.longitude! - osm.longitude!) < 0.005
+    );
+    if (!isDuplicate) {
+      combinedChurches.push(osm);
+    }
+  }
+
   const typeColors: Record<string, string> = {
     "Católica": "#818cf8",
     "Cristiana Evangélica": "#f472b6",
@@ -94,6 +177,11 @@ export default function MapLibreComponent({ churches, targetLocation, selectedCh
 
   return (
     <div style={{ position: "relative", width: "100%", height: "100%" }}>
+      {isFetchingOSM && (
+        <div style={{ position: "absolute", top: 10, left: "50%", transform: "translateX(-50%)", zIndex: 10, background: "rgba(15,23,42,0.8)", backdropFilter: "blur(4px)", padding: "4px 12px", borderRadius: "12px", fontSize: "0.8rem", color: "var(--text-secondary)", border: "1px solid var(--border)" }}>
+          Buscando iglesias en la zona...
+        </div>
+      )}
       <Map
         ref={mapRef}
         initialViewState={{
@@ -104,6 +192,7 @@ export default function MapLibreComponent({ churches, targetLocation, selectedCh
         style={{ width: "100%", height: "100%" }}
         mapStyle={MAP_STYLE}
         onLoad={handleMapLoad}
+        onMoveEnd={handleMoveEnd}
         attributionControl={false}
       >
         {/* Controls */}
@@ -121,8 +210,10 @@ export default function MapLibreComponent({ churches, targetLocation, selectedCh
         />
 
         {/* Church Markers */}
-        {validChurches.map((church) => {
+        {combinedChurches.map((church) => {
           const color = typeColors[church.type ?? ""] || "#818cf8";
+          const isOSM = church.id.startsWith("osm-");
+          
           return (
             <Marker
               key={church.id}
@@ -136,8 +227,8 @@ export default function MapLibreComponent({ churches, targetLocation, selectedCh
               <div
                 title={church.name}
                 style={{
-                  width: "32px",
-                  height: "32px",
+                  width: isOSM ? "24px" : "32px",
+                  height: isOSM ? "24px" : "32px",
                   borderRadius: "50% 50% 50% 0",
                   transform: "rotate(-45deg)",
                   background: color,
