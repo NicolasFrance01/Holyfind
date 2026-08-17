@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import MapLoader from "@/components/MapLoader";
 import { useSession, signOut } from "next-auth/react";
@@ -24,6 +24,58 @@ export default function MapsViewClient({ initialChurches }: { initialChurches: C
   const [filterType, setFilterType] = useState("Todas");
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
+  // Autocomplete state
+  const [suggestions, setSuggestions] = useState<any[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [targetLocation, setTargetLocation] = useState<{lat: number, lng: number} | null>(null);
+  const [selectedChurchId, setSelectedChurchId] = useState<string | null>(null);
+  const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    if (!searchTerm || searchTerm.length < 3) {
+      setSuggestions([]);
+      return;
+    }
+
+    if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
+
+    searchTimeoutRef.current = setTimeout(async () => {
+      // Find matching churches first
+      const churchMatches = initialChurches.filter(c => 
+        c.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+        c.address.toLowerCase().includes(searchTerm.toLowerCase())
+      ).slice(0, 3).map(c => ({
+        type: 'church',
+        id: c.id,
+        display_name: c.name,
+        lat: c.latitude,
+        lon: c.longitude,
+        desc: c.address
+      }));
+
+      // Fetch Nominatim places
+      try {
+        const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchTerm)}&limit=4`);
+        const data = await res.json();
+        const placeMatches = data.map((d: any) => ({
+          type: 'place',
+          display_name: d.display_name,
+          lat: parseFloat(d.lat),
+          lon: parseFloat(d.lon),
+        }));
+
+        setSuggestions([...churchMatches, ...placeMatches]);
+      } catch (err) {
+        console.error("Nominatim fetch error", err);
+        setSuggestions(churchMatches);
+      }
+    }, 400);
+
+    return () => {
+      if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
+    };
+  }, [searchTerm, initialChurches]);
+
   const filteredChurches = initialChurches.filter((church) => {
     const matchesSearch =
       church.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -36,6 +88,23 @@ export default function MapsViewClient({ initialChurches }: { initialChurches: C
     "Católica": "var(--primary-color)",
     "Cristiana Evangélica": "var(--secondary-color)",
     "Otra": "var(--accent-color)",
+  };
+
+  const handleSuggestionClick = (sug: any) => {
+    setSearchTerm(sug.display_name);
+    setShowSuggestions(false);
+    
+    if (sug.lat && sug.lon) {
+      setTargetLocation({ lat: sug.lat, lng: sug.lon });
+    }
+    
+    if (sug.type === 'church') {
+      setSelectedChurchId(sug.id);
+      // Ensure the sidebar opens to show the selected church
+      setSidebarOpen(true);
+    } else {
+      setSelectedChurchId(null);
+    }
   };
 
   return (
@@ -54,7 +123,7 @@ export default function MapsViewClient({ initialChurches }: { initialChurches: C
           <span className="text-gradient" style={{ fontFamily: "var(--font-heading)", fontWeight: 800, fontSize: "1.5rem" }}>Holyfind</span>
         </Link>
 
-        {/* Search Input */}
+        {/* Search Input with Autocomplete */}
         <div style={{ flex: 1, maxWidth: "500px", position: "relative" }}>
           <span style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", color: "var(--text-secondary)" }}>
             🔍
@@ -65,8 +134,35 @@ export default function MapsViewClient({ initialChurches }: { initialChurches: C
             className="form-input"
             style={{ width: "100%", paddingLeft: "42px", borderRadius: "99px", padding: "10px 20px 10px 42px", fontSize: "0.9rem" }}
             value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            onChange={(e) => {
+              setSearchTerm(e.target.value);
+              setShowSuggestions(true);
+            }}
+            onFocus={() => setShowSuggestions(true)}
+            onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
           />
+
+          {showSuggestions && suggestions.length > 0 && (
+            <div style={{
+              position: "absolute", top: "100%", left: 0, right: 0, marginTop: "8px",
+              background: "var(--surface)", border: "1px solid var(--border-strong)",
+              borderRadius: "16px", overflow: "hidden", boxShadow: "0 20px 40px rgba(0,0,0,0.6)",
+              zIndex: 100
+            }}>
+              {suggestions.map((sug, idx) => (
+                <div key={idx} onClick={() => handleSuggestionClick(sug)} style={{
+                  padding: "12px 16px", cursor: "pointer", borderBottom: idx < suggestions.length - 1 ? "1px solid var(--border)" : "none",
+                  display: "flex", alignItems: "center", gap: "12px", transition: "background 0.2s"
+                }} onMouseEnter={e => (e.currentTarget.style.background = "rgba(255,255,255,0.05)")} onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
+                  <span style={{ fontSize: "1.2rem", flexShrink: 0 }}>{sug.type === 'church' ? '⛪' : '📍'}</span>
+                  <div style={{ minWidth: 0 }}>
+                    <p style={{ color: "var(--text-primary)", fontSize: "0.9rem", fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{sug.display_name}</p>
+                    {sug.desc && <p style={{ color: "var(--text-secondary)", fontSize: "0.75rem", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{sug.desc}</p>}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Type Filters */}
@@ -114,7 +210,11 @@ export default function MapsViewClient({ initialChurches }: { initialChurches: C
 
       {/* Map (full screen) */}
       <div style={{ position: "absolute", inset: 0, paddingTop: "65px" }}>
-        <MapLoader churches={filteredChurches} />
+        <MapLoader 
+          churches={filteredChurches} 
+          targetLocation={targetLocation}
+          selectedChurchId={selectedChurchId}
+        />
       </div>
 
       {/* Floating Sidebar List */}

@@ -1,7 +1,7 @@
 "use client";
 
-import { useRef, useCallback } from "react";
-import Map, { Marker, Popup, NavigationControl, GeolocateControl } from "react-map-gl/maplibre";
+import { useRef, useCallback, useEffect } from "react";
+import Map, { Marker, Popup, NavigationControl, GeolocateControl, MapRef } from "react-map-gl/maplibre";
 import { useState } from "react";
 import "maplibre-gl/dist/maplibre-gl.css";
 
@@ -18,21 +18,69 @@ type Church = {
 
 type Props = {
   churches: Church[];
+  targetLocation?: { lat: number; lng: number } | null;
+  selectedChurchId?: string | null;
 };
 
-// Dark map style - matches our glassmorphism dark theme perfectly
-const MAP_STYLE = "https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json";
+// Dark map style using reliable raster tiles to avoid CORS/HTTPS issues on Vercel
+const MAP_STYLE = {
+  version: 8,
+  sources: {
+    "carto-dark": {
+      type: "raster",
+      tiles: [
+        "https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}@2x.png",
+        "https://b.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}@2x.png",
+        "https://c.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}@2x.png",
+        "https://d.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}@2x.png"
+      ],
+      tileSize: 256,
+      attribution: "&copy; <a href='https://carto.com/'>CARTO</a>"
+    }
+  },
+  layers: [
+    {
+      id: "carto-dark-layer",
+      type: "raster",
+      source: "carto-dark",
+      minzoom: 0,
+      maxzoom: 22
+    }
+  ]
+};
 
-export default function MapLibreComponent({ churches }: Props) {
+export default function MapLibreComponent({ churches, targetLocation, selectedChurchId }: Props) {
   const [popupInfo, setPopupInfo] = useState<Church | null>(null);
   const geolocateRef = useRef<any>(null);
+  const mapRef = useRef<MapRef>(null);
 
   const handleMapLoad = useCallback(() => {
-    // Auto-trigger geolocation on map load
-    setTimeout(() => {
-      geolocateRef.current?.trigger();
-    }, 500);
-  }, []);
+    // Auto-trigger geolocation on map load if no target is provided initially
+    if (!targetLocation) {
+      setTimeout(() => {
+        geolocateRef.current?.trigger();
+      }, 500);
+    }
+  }, [targetLocation]);
+
+  // Fly to target location when it changes
+  useEffect(() => {
+    if (targetLocation && mapRef.current) {
+      mapRef.current.flyTo({
+        center: [targetLocation.lng, targetLocation.lat],
+        zoom: 14,
+        duration: 2000,
+      });
+    }
+  }, [targetLocation]);
+
+  // Open popup when a church is selected from outside
+  useEffect(() => {
+    if (selectedChurchId) {
+      const church = churches.find(c => c.id === selectedChurchId);
+      if (church) setPopupInfo(church);
+    }
+  }, [selectedChurchId, churches]);
 
   const validChurches = churches.filter(
     (c) => c.latitude !== null && c.longitude !== null

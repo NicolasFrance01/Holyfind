@@ -49,14 +49,14 @@ export default function LoginPage() {
           )}
 
           <div className="form-group">
-            <label className="form-label">Email</label>
+            <label className="form-label">Email o Usuario</label>
             <input 
-              type="email" 
+              type="text" 
               required 
               className="form-input" 
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="tu@email.com"
+              placeholder="tu@email.com o master"
             />
           </div>
 
