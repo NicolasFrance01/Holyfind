@@ -11,6 +11,16 @@ enum Role {
   CLIENT
 }
 
+enum EventType {
+  MISA
+  RETIRO
+  CONCIERTO
+  CONFERENCIA
+  BAUTISMO
+  BODA
+  OTRO
+}
+
 model User {
   id        String   @id @default(uuid())
   email     String   @unique
@@ -32,10 +42,13 @@ model Church {
   description String?
   type        String?
   imageUrl    String?
+  phone       String?
+  website     String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   managers    ChurchManager[]
+  events      Event[]
 }
 
 model ChurchManager {
@@ -46,4 +59,19 @@ model ChurchManager {
   church   Church @relation(fields: [churchId], references: [id], onDelete: Cascade)
 
   @@unique([userId, churchId])
+}
+
+model Event {
+  id          String    @id @default(uuid())
+  title       String
+  description String?
+  eventDate   DateTime
+  type        EventType @default(OTRO)
+  imageUrl    String?
+  isPublic    Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  churchId    String
+  church      Church    @relation(fields: [churchId], references: [id], onDelete: Cascade)
 }
