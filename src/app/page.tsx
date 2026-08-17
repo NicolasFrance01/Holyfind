@@ -134,10 +134,7 @@ export default async function LandingPage() {
                 { icon: "🚀", title: "Acceso Inmediato", desc: "El mapa público es accesible sin registro. Cualquier persona puede encontrar una iglesia en segundos.", color: "#34d399" },
                 { icon: "🛡️", title: "Ciberseguridad", desc: "El Superadmin puede suspender accesos al instante. Las sesiones se gestionan con tokens JWT encriptados.", color: "#e879f9" },
               ].map(({ icon, title, desc, color }) => (
-                <div key={title} className="glass-panel" style={{ padding: "35px", borderRadius: "20px", transition: "all 0.3s ease" }}
-                  onMouseEnter={(e) => { (e.currentTarget.style.transform = "translateY(-4px)"); (e.currentTarget.style.borderColor = color); }}
-                  onMouseLeave={(e) => { (e.currentTarget.style.transform = "translateY(0)"); (e.currentTarget.style.borderColor = "var(--glass-border)"); }}
-                >
+                <div key={title} className="glass-panel feature-card" style={{ padding: "35px", borderRadius: "20px" }}>
                   <div style={{ fontSize: "2.5rem", marginBottom: "20px" }}>{icon}</div>
                   <h3 style={{ fontSize: "1.2rem", marginBottom: "12px", color }}>{title}</h3>
                   <p style={{ color: "var(--text-secondary)", lineHeight: 1.7, fontSize: "0.9rem" }}>{desc}</p>
@@ -166,10 +163,7 @@ export default async function LandingPage() {
                 {events.map((ev: typeof events[number]) => {
                   const date = new Date(ev.eventDate);
                   return (
-                    <div key={ev.id} className="glass-panel" style={{ padding: "25px", borderRadius: "20px", transition: "all 0.3s ease" }}
-                      onMouseEnter={(e) => { (e.currentTarget.style.transform = "translateY(-4px)"); }}
-                      onMouseLeave={(e) => { (e.currentTarget.style.transform = "translateY(0)"); }}
-                    >
+                    <div key={ev.id} className="glass-panel feature-card" style={{ padding: "25px", borderRadius: "20px" }}>
                       <div style={{ display: "flex", gap: "15px" }}>
                         {/* Date block */}
                         <div style={{ textAlign: "center", background: "rgba(99,102,241,0.15)", borderRadius: "12px", padding: "12px 16px", flexShrink: 0 }}>
