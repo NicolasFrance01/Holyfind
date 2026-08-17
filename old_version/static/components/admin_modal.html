@@ -1,0 +1,53 @@
+<!-- admin_modal.html -->
+<div id="adminModal" class="modal-admin" style="display: none;">
+    <div class="modal-content">
+        <span id="cerrarAdminModal" class="close">&times;</span>
+        <h2>Editar Iglesia</h2>
+
+        <form id="adminForm">
+            <input type="hidden" id="coordLat" name="lat">
+            <input type="hidden" id="coordLon" name="lon">
+
+            <label>Nombre:</label>
+            <input type="text" id="nombreIglesia" required>
+
+            <label>Dirección:</label>
+            <input type="text" id="direccionIglesia">
+
+            <label>Tipo (evangelical / christian / otro):</label>
+            <input type="text" id="tipoIglesia">
+
+            <label>Horarios:</label>
+            <input type="text" id="horariosIglesia">
+
+            <hr>
+
+            <label>📷 Imágenes actuales:</label>
+            <div id="galeriaPreview"></div>
+            <input type="file" id="nuevaImagen" multiple accept="image/*">
+
+            <hr>
+
+            <label>📅 Eventos próximos (hasta 6 meses):</label>
+            <ul id="listaEventos"></ul>
+
+            <label>Desde:</label>
+            <input type="date" id="fechaDesdeEvento">
+
+            <label>Hasta:</label>
+            <input type="date" id="fechaHastaEvento">
+
+            <label>Título:</label>
+            <input type="text" id="tituloEvento" placeholder="Título del evento">
+
+            <label>Descripción:</label>
+            <textarea id="descripcionEvento" placeholder="Descripción del evento (opcional)"></textarea>
+
+            <label>Imagen:</label>
+            <input type="file" id="imagenEvento" accept="image/*">
+
+            <button type="button" onclick="agregarEvento()">Agregar evento</button>
+
+        </form>
+    </div>
+</div>

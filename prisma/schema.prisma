@@ -1,0 +1,49 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  SUPERADMIN
+  CLIENT
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  role      Role     @default(CLIENT)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  churches  ChurchManager[]
+}
+
+model Church {
+  id          String   @id @default(uuid())
+  name        String
+  address     String
+  latitude    Float?
+  longitude   Float?
+  description String?
+  type        String?
+  imageUrl    String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  managers    ChurchManager[]
+}
+
+model ChurchManager {
+  id       String @id @default(uuid())
+  userId   String
+  churchId String
+  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  church   Church @relation(fields: [churchId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, churchId])
+}
