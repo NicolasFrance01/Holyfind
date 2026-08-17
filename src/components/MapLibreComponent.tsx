@@ -1,7 +1,8 @@
 "use client";
 
-import { useRef, useState, useCallback } from "react";
+import { useRef, useCallback } from "react";
 import Map, { Marker, Popup, NavigationControl, GeolocateControl } from "react-map-gl/maplibre";
+import { useState } from "react";
 import "maplibre-gl/dist/maplibre-gl.css";
 
 type Church = {
@@ -19,19 +20,28 @@ type Props = {
   churches: Church[];
 };
 
-const MAP_STYLE = "https://tiles.openfreemap.org/styles/liberty";
+// Dark map style - matches our glassmorphism dark theme perfectly
+const MAP_STYLE = "https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json";
 
 export default function MapLibreComponent({ churches }: Props) {
   const [popupInfo, setPopupInfo] = useState<Church | null>(null);
+  const geolocateRef = useRef<any>(null);
+
+  const handleMapLoad = useCallback(() => {
+    // Auto-trigger geolocation on map load
+    setTimeout(() => {
+      geolocateRef.current?.trigger();
+    }, 500);
+  }, []);
 
   const validChurches = churches.filter(
     (c) => c.latitude !== null && c.longitude !== null
   );
 
   const typeColors: Record<string, string> = {
-    "Católica": "#6366f1",
-    "Cristiana Evangélica": "#ec4899",
-    "Otra": "#0ea5e9",
+    "Católica": "#818cf8",
+    "Cristiana Evangélica": "#f472b6",
+    "Otra": "#38bdf8",
   };
 
   return (
@@ -40,37 +50,67 @@ export default function MapLibreComponent({ churches }: Props) {
         initialViewState={{
           longitude: -63.0,
           latitude: -34.0,
-          zoom: 4,
+          zoom: 4.5,
         }}
         style={{ width: "100%", height: "100%" }}
         mapStyle={MAP_STYLE}
+        onLoad={handleMapLoad}
       >
         {/* Controls */}
-        <NavigationControl position="top-right" style={{ margin: "10px" }} />
-        <GeolocateControl
+        <NavigationControl
           position="top-right"
-          style={{ margin: "10px" }}
-          trackUserLocation
+          style={{ margin: "10px", borderRadius: "12px" }}
+        />
+        <GeolocateControl
+          ref={geolocateRef}
+          position="top-right"
+          style={{ margin: "10px", borderRadius: "12px" }}
+          trackUserLocation={false}
+          showAccuracyCircle={false}
+          positionOptions={{ enableHighAccuracy: true }}
         />
 
         {/* Church Markers */}
-        {validChurches.map((church) => (
-          <Marker
-            key={church.id}
-            longitude={church.longitude!}
-            latitude={church.latitude!}
-            onClick={(e) => {
-              e.originalEvent.stopPropagation();
-              setPopupInfo(church);
-            }}
-          >
-            <div className="map-marker" style={{ "--marker-color": typeColors[church.type ?? ""] || "#6366f1" } as any}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="white" stroke="none">
-                <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/>
-              </svg>
-            </div>
-          </Marker>
-        ))}
+        {validChurches.map((church) => {
+          const color = typeColors[church.type ?? ""] || "#818cf8";
+          return (
+            <Marker
+              key={church.id}
+              longitude={church.longitude!}
+              latitude={church.latitude!}
+              onClick={(e) => {
+                e.originalEvent.stopPropagation();
+                setPopupInfo(church);
+              }}
+            >
+              <div
+                title={church.name}
+                style={{
+                  width: "32px",
+                  height: "32px",
+                  borderRadius: "50% 50% 50% 0",
+                  transform: "rotate(-45deg)",
+                  background: color,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  cursor: "pointer",
+                  boxShadow: `0 4px 15px ${color}66`,
+                  border: "2px solid rgba(255,255,255,0.4)",
+                  transition: "transform 0.2s ease, box-shadow 0.2s ease",
+                }}
+                onMouseEnter={(e) => {
+                  (e.currentTarget as HTMLDivElement).style.transform = "rotate(-45deg) scale(1.3)";
+                }}
+                onMouseLeave={(e) => {
+                  (e.currentTarget as HTMLDivElement).style.transform = "rotate(-45deg) scale(1)";
+                }}
+              >
+                <span style={{ transform: "rotate(45deg)", fontSize: "13px" }}>⛪</span>
+              </div>
+            </Marker>
+          );
+        })}
 
         {/* Popup */}
         {popupInfo && (
@@ -78,15 +118,30 @@ export default function MapLibreComponent({ churches }: Props) {
             longitude={popupInfo.longitude!}
             latitude={popupInfo.latitude!}
             anchor="bottom"
-            offset={[0, -20] as [number, number]}
+            offset={[0, -22] as [number, number]}
             onClose={() => setPopupInfo(null)}
             closeButton={false}
-            style={{ padding: 0 }}
+            style={{ padding: 0, zIndex: 100 }}
           >
-            <div className="map-popup glass-panel" style={{ padding: "20px", minWidth: "240px", maxWidth: "300px", borderRadius: "16px" }}>
+            <div style={{
+              background: "rgba(15, 23, 42, 0.95)",
+              backdropFilter: "blur(20px)",
+              border: "1px solid rgba(255,255,255,0.12)",
+              borderRadius: "18px",
+              padding: "20px",
+              minWidth: "240px",
+              maxWidth: "290px",
+              boxShadow: "0 20px 60px rgba(0,0,0,0.6)",
+            }}>
               <button
                 onClick={() => setPopupInfo(null)}
-                style={{ position: "absolute", top: "10px", right: "10px", background: "none", border: "none", color: "var(--text-secondary)", cursor: "pointer", fontSize: "1.2rem" }}
+                style={{
+                  position: "absolute", top: "10px", right: "12px",
+                  background: "rgba(255,255,255,0.1)", border: "none",
+                  color: "white", cursor: "pointer", fontSize: "1rem",
+                  width: "24px", height: "24px", borderRadius: "50%",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                }}
               >
                 ×
               </button>
@@ -94,19 +149,29 @@ export default function MapLibreComponent({ churches }: Props) {
                 <img
                   src={popupInfo.imageUrl}
                   alt={popupInfo.name}
-                  style={{ width: "100%", height: "120px", objectFit: "cover", borderRadius: "10px", marginBottom: "15px" }}
+                  style={{ width: "100%", height: "110px", objectFit: "cover", borderRadius: "10px", marginBottom: "12px" }}
                 />
               )}
-              <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "8px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "10px" }}>
                 <span style={{
-                  padding: "3px 10px", borderRadius: "99px", fontSize: "0.7rem", fontWeight: 700, background: typeColors[popupInfo.type ?? ""] || "#6366f1",
-                  color: "white", textTransform: "uppercase", letterSpacing: "0.05em"
-                }}>{popupInfo.type || "Iglesia"}</span>
+                  padding: "3px 10px", borderRadius: "99px", fontSize: "0.68rem", fontWeight: 700,
+                  background: typeColors[popupInfo.type ?? ""] || "#818cf8",
+                  color: "white", textTransform: "uppercase", letterSpacing: "0.06em"
+                }}>
+                  {popupInfo.type || "Iglesia"}
+                </span>
               </div>
-              <h3 style={{ color: "white", fontSize: "1.1rem", fontWeight: 700, marginBottom: "6px" }}>{popupInfo.name}</h3>
-              <p style={{ color: "var(--text-secondary)", fontSize: "0.85rem", marginBottom: "10px" }}>📍 {popupInfo.address}</p>
+              <h3 style={{ color: "white", fontSize: "1rem", fontWeight: 800, marginBottom: "6px", lineHeight: 1.3 }}>
+                {popupInfo.name}
+              </h3>
+              <p style={{ color: "#94a3b8", fontSize: "0.82rem", marginBottom: "8px" }}>
+                📍 {popupInfo.address}
+              </p>
               {popupInfo.description && (
-                <p style={{ color: "var(--text-secondary)", fontSize: "0.82rem", lineHeight: "1.5", borderTop: "1px solid var(--glass-border)", paddingTop: "10px" }}>
+                <p style={{
+                  color: "#64748b", fontSize: "0.8rem", lineHeight: 1.6,
+                  borderTop: "1px solid rgba(255,255,255,0.08)", paddingTop: "10px"
+                }}>
                   {popupInfo.description}
                 </p>
               )}
