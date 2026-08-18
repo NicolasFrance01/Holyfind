@@ -69,7 +69,7 @@ export const authOptions: NextAuthOptions = {
               data: {
                 email: user.email,
                 password: randomPassword,
-                role: "USER",
+                role: "CLIENT",
               },
             });
           }
