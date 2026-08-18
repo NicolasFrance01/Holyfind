@@ -39,6 +39,24 @@ export default function MapsViewClient({ initialChurches }: { initialChurches: C
   // Add Church Modal
   const [showAddModal, setShowAddModal] = useState(false);
 
+  // Auto-Geolocation on load
+  useEffect(() => {
+    if ("geolocation" in navigator) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setTargetLocation({
+            lat: position.coords.latitude,
+            lng: position.coords.longitude
+          });
+        },
+        (error) => {
+          console.warn("Geolocalización denegada o con error:", error);
+        },
+        { enableHighAccuracy: true, timeout: 5000 }
+      );
+    }
+  }, []);
+
   useEffect(() => {
     if (!searchTerm || searchTerm.length < 3) {
       setSuggestions([]);

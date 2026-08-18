@@ -282,24 +282,45 @@ export default function MapComponent({ churches, targetLocation, selectedChurchI
                   {church.imageUrl && (
                     <img src={church.imageUrl} alt={church.name} style={{ width: "100%", height: "100px", objectFit: "cover", marginTop: "10px", borderRadius: "8px" }} />
                   )}
-                  <a 
-                    href={`https://www.google.com/maps/dir/?api=1&destination=${church.latitude},${church.longitude}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={{
-                      display: "flex", alignItems: "center", justifyContent: "center", gap: "6px",
-                      background: "var(--primary-color, #4f46e5)", color: "white", textDecoration: "none",
-                      padding: "8px 0", borderRadius: "10px", fontSize: "0.85rem", fontWeight: 600,
-                      width: "100%", transition: "background 0.2s", marginTop: "10px"
-                    }}
-                  >
-                    🗺️ Cómo llegar
-                  </a>
+                  <div style={{ display: "flex", gap: "8px", marginTop: "10px" }}>
+                    <a 
+                      href={`https://www.google.com/maps/dir/?api=1&destination=${church.latitude},${church.longitude}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{
+                        flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: "6px",
+                        background: "var(--primary-color, #4f46e5)", color: "white", textDecoration: "none",
+                        padding: "8px 0", borderRadius: "10px", fontSize: "0.85rem", fontWeight: 600,
+                        transition: "background 0.2s"
+                      }}
+                    >
+                      🧭 Ir
+                    </a>
+                    <button 
+                      onClick={() => alert("Función de edición en desarrollo. Por favor, usá el botón inferior de 'Falta tu iglesia' por ahora.")}
+                      style={{
+                        flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: "6px",
+                        background: "white", color: "#475569", textDecoration: "none", border: "1px solid #cbd5e1",
+                        padding: "8px 0", borderRadius: "10px", fontSize: "0.85rem", fontWeight: 600, cursor: "pointer"
+                      }}
+                    >
+                      📝 Editar
+                    </button>
+                  </div>
                 </div>
               </Popup>
             </Marker>
           );
         })}
+
+        {/* User Location Marker */}
+        {targetLocation && (
+          <Marker position={[targetLocation.lat, targetLocation.lng]}>
+            <Popup>
+              <b>📍 Estás acá</b><br/>Tu ubicación actual
+            </Popup>
+          </Marker>
+        )}
       </MapContainer>
 
       {/* Religion Legend */}
