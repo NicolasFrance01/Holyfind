@@ -36,6 +36,7 @@ type Props = {
   churches: Church[];
   targetLocation?: { lat: number; lng: number } | null;
   selectedChurchId?: string | null;
+  onPlacesUpdate?: (places: Church[]) => void;
 };
 
 function buildPopupHTML(name: string, type: string, address: string, lat: number, lng: number): string {
