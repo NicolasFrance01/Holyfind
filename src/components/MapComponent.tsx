@@ -86,7 +86,7 @@ function radiusForZoom(zoom: number): number {
   return 25000;
 }
 
-export default function MapComponent({ churches, targetLocation }: Props) {
+export default function MapComponent({ churches, targetLocation, onPlacesUpdate }: Props) {
   const mapDivRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<any>(null);
   const userMarkerRef = useRef<any>(null);
@@ -129,6 +129,7 @@ out center tags;`;
       const data = await res.json();
 
       let found = 0;
+      const foundOsmPlaces: Church[] = [];
       data.elements.forEach((el: any) => {
         const coords: [number, number] = el.type === "node"
           ? [el.lat, el.lon]
@@ -150,18 +151,33 @@ out center tags;`;
           .addTo(map)
           .bindPopup(buildPopupHTML(name, type, address, coords[0], coords[1]));
         osmMarkersRef.current.push(marker);
+
+        foundOsmPlaces.push({
+          id: `osm-${el.id || Math.random()}`,
+          name,
+          address,
+          latitude: coords[0],
+          longitude: coords[1],
+          description: null,
+          type,
+          imageUrl: null,
+        });
+
         found++;
       });
 
       setPlacesCount(found);
       setStatus(found > 0 ? `${found} lugares de culto` : "Sin resultados en esta zona");
+      if (onPlacesUpdate) {
+        onPlacesUpdate(foundOsmPlaces);
+      }
     } catch (err) {
       console.error("Error Overpass:", err);
       setStatus("Error al cargar iglesias");
     } finally {
       setIsSearching(false);
     }
-  }, []);
+  }, [onPlacesUpdate]);
 
   // ── Disparar búsqueda con debounce al mover/zoom ─────────────────────────
   const scheduleSearch = useCallback((map: any, L: any) => {
@@ -266,19 +282,23 @@ out center tags;`;
         position: "absolute", top: 10, left: "50%", transform: "translateX(-50%)",
         zIndex: 999, background: isSearching ? "rgba(255,255,255,0.96)" : "rgba(79,70,229,0.92)",
         backdropFilter: "blur(4px)",
-        padding: "5px 16px", borderRadius: "12px", fontSize: "0.83rem",
+        padding: "6px 18px", borderRadius: "20px", fontSize: "0.85rem",
         color: isSearching ? "#334155" : "white",
         border: isSearching ? "1px solid #cbd5e1" : "none",
         boxShadow: "0 4px 15px rgba(0,0,0,0.15)", fontWeight: 700,
         whiteSpace: "nowrap", transition: "all 0.3s",
-        display: "flex", alignItems: "center", gap: "8px",
+        display: "flex", alignItems: "center", gap: "8px"
       }}>
-        {isSearching ? "🔍 Buscando..." : (placesCount > 0 ? `⛪ ${placesCount} lugares de culto` : `ℹ️ ${status}`)}
+        {isSearching && (
+          <div style={{ width: "14px", height: "14px", border: "2px solid #334155", borderTopColor: "transparent", borderRadius: "50%", animation: "spin 1s linear infinite" }} />
+        )}
+        {status}
       </div>
 
       <div ref={mapDivRef} style={{ width: "100%", height: "100%" }} />
 
       <style>{`
+        @keyframes spin { 100% { transform: rotate(360deg); } }
         .leaflet-popup-content-wrapper { border-radius: 14px !important; box-shadow: 0 8px 30px rgba(0,0,0,0.15) !important; }
         .leaflet-popup-content { margin: 14px 16px !important; }
         .leaflet-popup-tip-container { display: none; }

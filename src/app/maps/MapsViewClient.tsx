@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import MapLoader from "@/components/MapLoader";
-import { useSession, signOut } from "next-auth/react";
+import { useSession, signIn, signOut } from "next-auth/react";
 
 type Church = {
   id: string;
@@ -16,11 +16,14 @@ type Church = {
   imageUrl: string | null;
 };
 
-
-
 export default function MapsViewClient({ initialChurches }: { initialChurches: Church[] }) {
   const { data: session } = useSession();
   const [searchTerm, setSearchTerm] = useState("");
+  
+  // Lista de iglesias de OSM encontradas por el mapa
+  const [osmPlaces, setOsmPlaces] = useState<Church[]>([]);
+  // Filtro activo
+  const [activeFilter, setActiveFilter] = useState("Todas");
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
@@ -34,6 +37,8 @@ export default function MapsViewClient({ initialChurches }: { initialChurches: C
 
   // Add Church Modal
   const [showAddModal, setShowAddModal] = useState(false);
+
+  const filters = ["Todas", "Católica", "Cristiana Evangélica", "Cristiana", "Islam", "Judaísmo", "Otro"];
 
   // Auto-Geolocation on load
   useEffect(() => {
@@ -107,19 +112,29 @@ export default function MapsViewClient({ initialChurches }: { initialChurches: C
     };
   }, [searchTerm, initialChurches]);
 
-  const filteredChurches = initialChurches.filter((church) => {
-    // If a generic place is selected, we don't want to hide churches in that place,
-    // so we skip the text search filter.
+  // Combine DB and OSM churches, removing exact duplicate coordinates if any
+  const allPlaces = [...initialChurches, ...osmPlaces];
+  const uniquePlaces = Array.from(new Map(allPlaces.map(p => [\`\${p.latitude},\${p.longitude}\`, p])).values());
+
+  const filteredChurches = uniquePlaces.filter((church) => {
+    // Filter by type
+    if (activeFilter !== "Todas" && church.type !== activeFilter) return false;
+
+    // Filter by search term
     const matchesSearch = isPlaceSelected || !searchTerm ||
       church.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       church.address.toLowerCase().includes(searchTerm.toLowerCase());
+    
     return matchesSearch;
   });
 
   const typeColors: Record<string, string> = {
-    "Católica": "var(--primary-color)",
-    "Cristiana Evangélica": "var(--secondary-color)",
-    "Otra": "var(--accent-color)",
+    "Católica":             "#818cf8",
+    "Cristiana Evangélica": "#f472b6",
+    "Cristiana":            "#c084fc",
+    "Islam":                "#34d399",
+    "Judaísmo":             "#60a5fa",
+    "Otro":                 "#94a3b8",
   };
 
   const handleSuggestionClick = (sug: any) => {
@@ -209,11 +224,10 @@ export default function MapsViewClient({ initialChurches }: { initialChurches: C
           )}
         </div>
 
-
-        {/* Right: count + sidebar toggle + admin link */}
+        {/* Right: count + sidebar toggle + auth link */}
         <div style={{ marginLeft: "auto", display: "flex", gap: "10px", alignItems: "center" }}>
           <span style={{ color: "var(--text-secondary)", fontSize: "0.85rem", whiteSpace: "nowrap" }}>
-            {filteredChurches.length} iglesia{filteredChurches.length !== 1 ? "s" : ""}
+            {filteredChurches.length} lugar{filteredChurches.length !== 1 ? "es" : ""} de culto
           </span>
           <button
             onClick={() => setSidebarOpen(!sidebarOpen)}
@@ -222,14 +236,20 @@ export default function MapsViewClient({ initialChurches }: { initialChurches: C
           >
             {sidebarOpen ? "✕ Cerrar" : "☰ Lista"}
           </button>
+          
           {session?.user ? (
-            <button onClick={() => signOut({ callbackUrl: "/" })} className="btn-secondary" style={{ padding: "6px 14px", fontSize: "0.85rem", borderRadius: "10px" }}>
-              Salir
-            </button>
+            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+              {session.user.image && (
+                <img src={session.user.image} alt="Perfil" style={{ width: "28px", height: "28px", borderRadius: "50%" }} />
+              )}
+              <button onClick={() => signOut({ callbackUrl: "/" })} className="btn-secondary" style={{ padding: "6px 14px", fontSize: "0.85rem", borderRadius: "10px" }}>
+                Salir
+              </button>
+            </div>
           ) : (
-            <Link href="/login" className="btn-primary" style={{ padding: "7px 18px", fontSize: "0.85rem" }}>
-              Admin
-            </Link>
+            <button onClick={() => signIn("google")} className="btn-primary" style={{ padding: "7px 18px", fontSize: "0.85rem", display: "flex", alignItems: "center", gap: "6px" }}>
+              Registrarse
+            </button>
           )}
         </div>
       </div>
@@ -237,48 +257,75 @@ export default function MapsViewClient({ initialChurches }: { initialChurches: C
       {/* Map (full screen) */}
       <div style={{ position: "absolute", inset: 0, paddingTop: "65px" }}>
         <MapLoader 
-          churches={filteredChurches} 
+          churches={initialChurches} 
           targetLocation={targetLocation}
           selectedChurchId={selectedChurchId}
+          onPlacesUpdate={setOsmPlaces}
         />
       </div>
 
       {/* Floating Sidebar List */}
       <div style={{
         position: "absolute", top: "75px", right: sidebarOpen ? "15px" : "-360px",
-        width: "340px", maxHeight: "calc(100vh - 90px)",
+        width: "360px", maxHeight: "calc(100vh - 90px)",
         transition: "right 0.3s ease", zIndex: 10,
-        display: "flex", flexDirection: "column", gap: "8px",
-        overflowY: "auto",
-        padding: "4px",
+        display: "flex", flexDirection: "column", gap: "12px",
+        background: "rgba(15,23,42,0.85)",
+        backdropFilter: "blur(20px)",
+        border: "1px solid var(--glass-border)",
+        borderRadius: "16px",
+        padding: "16px",
+        boxShadow: "0 20px 40px rgba(0,0,0,0.5)"
       }}>
-        {filteredChurches.length === 0 ? (
-          <div className="glass-panel" style={{ padding: "20px", textAlign: "center", color: "var(--text-secondary)" }}>
-            No se encontraron iglesias
-          </div>
-        ) : filteredChurches.map((church) => (
-          <div key={church.id} className="glass-panel" style={{ padding: "15px", borderRadius: "14px", cursor: "pointer", transition: "all 0.2s" }}
-            onMouseEnter={e => (e.currentTarget.style.borderColor = "var(--primary-color)")}
-            onMouseLeave={e => (e.currentTarget.style.borderColor = "var(--glass-border)")}
-          >
-            <div style={{ display: "flex", gap: "10px", alignItems: "flex-start" }}>
-              {church.imageUrl ? (
-                <img src={church.imageUrl} alt={church.name} style={{ width: "48px", height: "48px", borderRadius: "10px", objectFit: "cover", flexShrink: 0 }} />
-              ) : (
-                <div style={{ width: "48px", height: "48px", borderRadius: "10px", background: "rgba(99,102,241,0.2)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, fontSize: "1.4rem" }}>
-                  ⛪
+        <h3 style={{ color: "white", fontSize: "1.1rem", fontWeight: 800 }}>Lugares de Culto ({filteredChurches.length})</h3>
+        
+        {/* Filters */}
+        <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
+          {filters.map((filter) => (
+            <button
+              key={filter}
+              onClick={() => setActiveFilter(filter)}
+              style={{
+                padding: "4px 10px", borderRadius: "20px", fontSize: "0.75rem", fontWeight: 600, cursor: "pointer",
+                background: activeFilter === filter ? typeColors[filter] || "var(--primary-color)" : "rgba(255,255,255,0.1)",
+                color: "white", border: "1px solid rgba(255,255,255,0.1)",
+                transition: "all 0.2s"
+              }}
+            >
+              {filter}
+            </button>
+          ))}
+        </div>
+
+        <div style={{ overflowY: "auto", display: "flex", flexDirection: "column", gap: "8px", paddingRight: "4px" }}>
+          {filteredChurches.length === 0 ? (
+            <div style={{ padding: "20px", textAlign: "center", color: "var(--text-secondary)" }}>
+              No se encontraron lugares
+            </div>
+          ) : filteredChurches.map((church) => (
+            <div key={church.id} className="glass-panel" style={{ padding: "12px", borderRadius: "12px", cursor: "pointer", transition: "all 0.2s" }}
+              onMouseEnter={e => (e.currentTarget.style.borderColor = "var(--primary-color)")}
+              onMouseLeave={e => (e.currentTarget.style.borderColor = "var(--glass-border)")}
+            >
+              <div style={{ display: "flex", gap: "10px", alignItems: "flex-start" }}>
+                {church.imageUrl ? (
+                  <img src={church.imageUrl} alt={church.name} style={{ width: "40px", height: "40px", borderRadius: "10px", objectFit: "cover", flexShrink: 0 }} />
+                ) : (
+                  <div style={{ width: "40px", height: "40px", borderRadius: "10px", background: "rgba(99,102,241,0.2)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, fontSize: "1.2rem" }}>
+                    ⛪
+                  </div>
+                )}
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ display: "flex", gap: "6px", alignItems: "center", marginBottom: "2px" }}>
+                    <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: typeColors[church.type ?? ""] || "#94a3b8", flexShrink: 0 }} />
+                    <h4 style={{ color: "white", fontSize: "0.85rem", fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{church.name}</h4>
+                  </div>
+                  <p style={{ color: "var(--text-secondary)", fontSize: "0.75rem", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>📍 {church.address}</p>
                 </div>
-              )}
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ display: "flex", gap: "6px", alignItems: "center", marginBottom: "4px" }}>
-                  <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: typeColors[church.type ?? ""] || "var(--primary-color)", flexShrink: 0 }} />
-                  <h4 style={{ color: "white", fontSize: "0.9rem", fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{church.name}</h4>
-                </div>
-                <p style={{ color: "var(--text-secondary)", fontSize: "0.78rem", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>📍 {church.address}</p>
               </div>
             </div>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
 
       {/* Floating Add Church Button */}
