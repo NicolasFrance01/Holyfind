@@ -16,12 +16,12 @@ type Church = {
   imageUrl: string | null;
 };
 
-const CHURCH_TYPES = ["Todas", "Católica", "Cristiana Evangélica", "Otra"];
+
 
 export default function MapsViewClient({ initialChurches }: { initialChurches: Church[] }) {
   const { data: session } = useSession();
   const [searchTerm, setSearchTerm] = useState("");
-  const [filterType, setFilterType] = useState("Todas");
+
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   // Autocomplete state
@@ -83,8 +83,7 @@ export default function MapsViewClient({ initialChurches }: { initialChurches: C
     const matchesSearch = isPlaceSelected || !searchTerm ||
       church.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       church.address.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesType = filterType === "Todas" || church.type === filterType;
-    return matchesSearch && matchesType;
+    return matchesSearch;
   });
 
   const typeColors: Record<string, string> = {
@@ -171,24 +170,6 @@ export default function MapsViewClient({ initialChurches }: { initialChurches: C
           )}
         </div>
 
-        {/* Type Filters */}
-        <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
-          {CHURCH_TYPES.map((type) => (
-            <button
-              key={type}
-              onClick={() => setFilterType(type)}
-              style={{
-                padding: "6px 14px", borderRadius: "99px", border: "1px solid",
-                fontSize: "0.82rem", fontWeight: 600, cursor: "pointer", transition: "all 0.2s",
-                background: filterType === type ? "var(--primary-color)" : "transparent",
-                borderColor: filterType === type ? "var(--primary-color)" : "var(--glass-border)",
-                color: filterType === type ? "white" : "var(--text-secondary)",
-              }}
-            >
-              {type}
-            </button>
-          ))}
-        </div>
 
         {/* Right: count + sidebar toggle + admin link */}
         <div style={{ marginLeft: "auto", display: "flex", gap: "10px", alignItems: "center" }}>
@@ -261,19 +242,7 @@ export default function MapsViewClient({ initialChurches }: { initialChurches: C
         ))}
       </div>
 
-      {/* Floating Legend */}
-      <div className="glass-panel" style={{
-        position: "absolute", bottom: "20px", left: "20px",
-        padding: "12px 16px", borderRadius: "12px", zIndex: 10,
-      }}>
-        <p style={{ color: "var(--text-secondary)", fontSize: "0.7rem", marginBottom: "8px", textTransform: "uppercase", letterSpacing: "0.05em", fontWeight: 600 }}>Tipo</p>
-        {Object.entries({ "Católica": "var(--primary-color)", "Evangélica": "var(--secondary-color)", "Otra": "var(--accent-color)" }).map(([type, color]) => (
-          <div key={type} style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "5px" }}>
-            <span style={{ width: "10px", height: "10px", borderRadius: "50%", background: color }} />
-            <span style={{ color: "var(--text-primary)", fontSize: "0.8rem" }}>{type}</span>
-          </div>
-        ))}
-      </div>
+
     </div>
   );
 }

@@ -54,6 +54,7 @@ export default function MapLibreComponent({ churches, targetLocation, selectedCh
   const geolocateRef = useRef<any>(null);
   const mapRef = useRef<MapRef>(null);
   const [showLegend, setShowLegend] = useState(false);
+  const [activeFilters, setActiveFilters] = useState<Set<string>>(new Set());
 
   // OSM state
   const [osmChurches, setOsmChurches] = useState<Church[]>([]);
@@ -79,7 +80,7 @@ export default function MapLibreComponent({ churches, targetLocation, selectedCh
           node["building"="temple"](${south},${west},${north},${east});
           node["building"="cathedral"](${south},${west},${north},${east});
         );
-        out center;
+        out center tags;
       `;
       
       const res = await fetch("https://overpass-api.de/api/interpreter", {
@@ -138,10 +139,18 @@ export default function MapLibreComponent({ churches, targetLocation, selectedCh
           type = "Otro templo";
         }
 
+        // Improve address extraction
+        let addressStr = "Ubicación de OpenStreetMap";
+        if (tags["addr:street"]) {
+          addressStr = `${tags["addr:street"]} ${tags["addr:housenumber"] || ""}`.trim();
+          const city = tags["addr:city"] || tags["addr:town"] || tags["addr:suburb"] || "";
+          if (city) addressStr += `, ${city}`;
+        }
+
         return {
           id: `osm-${el.id}`,
           name: rawName || defaultName,
-          address: tags["addr:street"] ? `${tags["addr:street"]} ${tags["addr:housenumber"] || ""}`.trim() : "Ubicación de OpenStreetMap",
+          address: addressStr,
           latitude: lat,
           longitude: lon,
           type: type,
@@ -204,7 +213,7 @@ export default function MapLibreComponent({ churches, targetLocation, selectedCh
   );
 
   // Combine DB churches with OSM churches, preventing duplicates loosely by name/proximity
-  const combinedChurches = [...validChurches];
+  let combinedChurches = [...validChurches];
   for (const osm of osmChurches) {
     const isDuplicate = validChurches.some(vc => 
       Math.abs(vc.latitude! - osm.latitude!) < 0.005 && 
@@ -213,6 +222,11 @@ export default function MapLibreComponent({ churches, targetLocation, selectedCh
     if (!isDuplicate) {
       combinedChurches.push(osm);
     }
+  }
+
+  // Filter combined churches by activeFilters
+  if (activeFilters.size > 0) {
+    combinedChurches = combinedChurches.filter((c) => activeFilters.has(c.type || ""));
   }
 
   const typeColors: Record<string, string> = {
@@ -489,23 +503,47 @@ export default function MapLibreComponent({ churches, targetLocation, selectedCh
               Lugares de culto
             </p>
             <div style={{ display: "flex", flexDirection: "column", gap: "7px" }}>
-              {legendItems.map(({ label, emoji }) => (
-                <div key={label} style={{ display: "flex", alignItems: "center", gap: "9px" }}>
-                  <div style={{
-                    width: "14px",
-                    height: "14px",
-                    borderRadius: "50% 50% 50% 0",
-                    transform: "rotate(-45deg)",
-                    background: typeColors[label],
-                    flexShrink: 0,
-                    boxShadow: `0 2px 6px ${typeColors[label]}88`,
-                  }} />
-                  <span style={{ fontSize: "0.78rem", color: "#e2e8f0", display: "flex", alignItems: "center", gap: "5px" }}>
-                    <span style={{ fontSize: "0.9rem" }}>{emoji}</span>
-                    {label}
-                  </span>
-                </div>
-              ))}
+              {legendItems.map(({ label, emoji }) => {
+                const isActive = activeFilters.size === 0 || activeFilters.has(label);
+                return (
+                  <div 
+                    key={label} 
+                    onClick={() => {
+                      setActiveFilters(prev => {
+                        const next = new Set(prev);
+                        if (next.has(label)) {
+                          next.delete(label);
+                        } else {
+                          next.add(label);
+                        }
+                        return next;
+                      });
+                    }}
+                    style={{ 
+                      display: "flex", 
+                      alignItems: "center", 
+                      gap: "9px",
+                      cursor: "pointer",
+                      opacity: isActive ? 1 : 0.4,
+                      transition: "opacity 0.2s"
+                    }}
+                  >
+                    <div style={{
+                      width: "14px",
+                      height: "14px",
+                      borderRadius: "50% 50% 50% 0",
+                      transform: "rotate(-45deg)",
+                      background: typeColors[label],
+                      flexShrink: 0,
+                      boxShadow: isActive ? `0 2px 6px ${typeColors[label]}88` : 'none',
+                    }} />
+                    <span style={{ fontSize: "0.78rem", color: "#e2e8f0", display: "flex", alignItems: "center", gap: "5px" }}>
+                      <span style={{ fontSize: "0.9rem", filter: isActive ? 'none' : 'grayscale(100%)' }}>{emoji}</span>
+                      {label}
+                    </span>
+                  </div>
+                );
+              })}
             </div>
             <p style={{ color: "#475569", fontSize: "0.62rem", marginTop: "10px", margin: "10px 0 0 0", lineHeight: 1.4 }}>
               Fuente: OpenStreetMap · Zoom &gt;10 requerido
