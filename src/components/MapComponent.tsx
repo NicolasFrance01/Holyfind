@@ -115,8 +115,14 @@ export default function MapComponent({ churches, targetLocation }: Props) {
 out center tags;`;
 
     try {
-      const url = `https://overpass-api.de/api/interpreter?data=${encodeURIComponent(query.trim())}`;
-      const res = await fetch(url);
+      // Overpass requiere x-www-form-urlencoded para peticiones POST desde el navegador
+      const params = new URLSearchParams();
+      params.append("data", query.trim());
+
+      const res = await fetch("https://overpass-api.de/api/interpreter", {
+        method: "POST",
+        body: params,
+      });
       
       if (!res.ok) {
         throw new Error(`Overpass API error: ${res.status} ${res.statusText}`);
