@@ -62,11 +62,12 @@ export default function MapsViewClient({ initialChurches }: { initialChurches: C
       }));
 
       // Fetch Google Places Autocomplete if available
-      if (googleMapsLoaded && window.google) {
+      const w = window as any;
+      if (googleMapsLoaded && w.google) {
         try {
-          const autocompleteService = new window.google.maps.places.AutocompleteService();
-          autocompleteService.getPlacePredictions({ input: searchTerm }, (predictions, status) => {
-            if (status !== window.google.maps.places.PlacesServiceStatus.OK || !predictions) {
+          const autocompleteService = new w.google.maps.places.AutocompleteService();
+          autocompleteService.getPlacePredictions({ input: searchTerm }, (predictions: any, status: any) => {
+            if (status !== w.google.maps.places.PlacesServiceStatus.OK || !predictions) {
               setSuggestions(churchMatches);
               return;
             }
@@ -126,11 +127,12 @@ export default function MapsViewClient({ initialChurches }: { initialChurches: C
     setSearchTerm(sug.display_name);
     setShowSuggestions(false);
     
-    if (sug.type === 'place' && !sug.lat && googleMapsLoaded && window.google) {
+    const w = window as any;
+    if (sug.type === 'place' && !sug.lat && googleMapsLoaded && w.google) {
       // It's a Google Place ID, we need to geocode it
-      const geocoder = new window.google.maps.Geocoder();
-      geocoder.geocode({ placeId: sug.id }, (results, status) => {
-        if (status === window.google.maps.GeocoderStatus.OK && results && results[0]) {
+      const geocoder = new w.google.maps.Geocoder();
+      geocoder.geocode({ placeId: sug.id }, (results: any, status: any) => {
+        if (status === w.google.maps.GeocoderStatus.OK && results && results[0]) {
           const location = results[0].geometry.location;
           setTargetLocation({ lat: location.lat(), lng: location.lng() });
         }
