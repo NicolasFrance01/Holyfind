@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
+import Script from "next/script";
 import MapLoader from "@/components/MapLoader";
 import { useSession, signOut } from "next-auth/react";
 
@@ -32,6 +33,12 @@ export default function MapsViewClient({ initialChurches }: { initialChurches: C
   const [isPlaceSelected, setIsPlaceSelected] = useState(false);
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Google Maps Integration
+  const [googleMapsLoaded, setGoogleMapsLoaded] = useState(false);
+
+  // Add Church Modal
+  const [showAddModal, setShowAddModal] = useState(false);
+
   useEffect(() => {
     if (!searchTerm || searchTerm.length < 3) {
       setSuggestions([]);
@@ -54,21 +61,44 @@ export default function MapsViewClient({ initialChurches }: { initialChurches: C
         desc: c.address
       }));
 
-      // Fetch Nominatim places
-      try {
-        const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchTerm)}&limit=4`);
-        const data = await res.json();
-        const placeMatches = data.map((d: any) => ({
-          type: 'place',
-          display_name: d.display_name,
-          lat: parseFloat(d.lat),
-          lon: parseFloat(d.lon),
-        }));
-
-        setSuggestions([...churchMatches, ...placeMatches]);
-      } catch (err) {
-        console.error("Nominatim fetch error", err);
-        setSuggestions(churchMatches);
+      // Fetch Google Places Autocomplete if available
+      if (googleMapsLoaded && window.google) {
+        try {
+          const autocompleteService = new window.google.maps.places.AutocompleteService();
+          autocompleteService.getPlacePredictions({ input: searchTerm }, (predictions, status) => {
+            if (status !== window.google.maps.places.PlacesServiceStatus.OK || !predictions) {
+              setSuggestions(churchMatches);
+              return;
+            }
+            const placeMatches = predictions.map((p: any) => ({
+              type: 'place',
+              id: p.place_id,
+              display_name: p.description,
+              lat: null, // will fetch from geocoder on click
+              lon: null
+            }));
+            setSuggestions([...churchMatches, ...placeMatches]);
+          });
+        } catch (err) {
+          console.error("Google Autocomplete error", err);
+          setSuggestions(churchMatches);
+        }
+      } else {
+        // Fallback to Nominatim if Google Maps isn't loaded
+        try {
+          const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchTerm)}&limit=4`);
+          const data = await res.json();
+          const placeMatches = data.map((d: any) => ({
+            type: 'place',
+            display_name: d.display_name,
+            lat: parseFloat(d.lat),
+            lon: parseFloat(d.lon),
+          }));
+          setSuggestions([...churchMatches, ...placeMatches]);
+        } catch (err) {
+          console.error("Nominatim fetch error", err);
+          setSuggestions(churchMatches);
+        }
       }
     }, 400);
 
@@ -96,23 +126,38 @@ export default function MapsViewClient({ initialChurches }: { initialChurches: C
     setSearchTerm(sug.display_name);
     setShowSuggestions(false);
     
-    if (sug.lat && sug.lon) {
-      setTargetLocation({ lat: sug.lat, lng: sug.lon });
-    }
-    
-    if (sug.type === 'church') {
-      setIsPlaceSelected(false);
-      setSelectedChurchId(sug.id);
-      // Ensure the sidebar opens to show the selected church
-      setSidebarOpen(true);
-    } else {
+    if (sug.type === 'place' && !sug.lat && googleMapsLoaded && window.google) {
+      // It's a Google Place ID, we need to geocode it
+      const geocoder = new window.google.maps.Geocoder();
+      geocoder.geocode({ placeId: sug.id }, (results, status) => {
+        if (status === window.google.maps.GeocoderStatus.OK && results && results[0]) {
+          const location = results[0].geometry.location;
+          setTargetLocation({ lat: location.lat(), lng: location.lng() });
+        }
+      });
       setIsPlaceSelected(true);
       setSelectedChurchId(null);
+    } else if (sug.lat && sug.lon) {
+      // It has coordinates directly (Nominatim or Church)
+      setTargetLocation({ lat: sug.lat, lng: sug.lon });
+      if (sug.type === 'church') {
+        setIsPlaceSelected(false);
+        setSelectedChurchId(sug.id);
+        setSidebarOpen(true);
+      } else {
+        setIsPlaceSelected(true);
+        setSelectedChurchId(null);
+      }
     }
   };
 
   return (
     <div style={{ height: "100vh", width: "100vw", position: "relative", overflow: "hidden", background: "var(--bg-gradient-start)" }}>
+      <Script 
+        src={`https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "AIzaSyDSbH5uE_BwS00ZxTstjMb7b8K-SOyWwkU"}&libraries=places`} 
+        strategy="lazyOnload" 
+        onLoad={() => setGoogleMapsLoaded(true)} 
+      />
       
       {/* Top Bar */}
       <div style={{
@@ -242,7 +287,89 @@ export default function MapsViewClient({ initialChurches }: { initialChurches: C
         ))}
       </div>
 
+      {/* Floating Add Church Button */}
+      <button 
+        onClick={() => setShowAddModal(true)}
+        style={{
+          position: "absolute", bottom: "30px", right: "20px", zIndex: 15,
+          background: "var(--primary-color)", color: "white",
+          border: "none", borderRadius: "99px", padding: "12px 20px",
+          fontSize: "0.95rem", fontWeight: 700, cursor: "pointer",
+          boxShadow: "0 10px 25px rgba(79, 70, 229, 0.4)",
+          display: "flex", alignItems: "center", gap: "8px",
+          transition: "transform 0.2s, background 0.2s"
+        }}
+        onMouseEnter={e => e.currentTarget.style.transform = "scale(1.05)"}
+        onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}
+      >
+        <span>➕</span> ¿Falta tu iglesia?
+      </button>
 
+      {/* Add Church Modal */}
+      {showAddModal && (
+        <div style={{
+          position: "fixed", inset: 0, zIndex: 1000,
+          background: "rgba(0,0,0,0.7)", backdropFilter: "blur(5px)",
+          display: "flex", alignItems: "center", justifyContent: "center", padding: "20px"
+        }}>
+          <div style={{
+            background: "var(--surface)", border: "1px solid var(--glass-border)",
+            borderRadius: "24px", padding: "30px", maxWidth: "500px", width: "100%",
+            boxShadow: "0 25px 50px rgba(0,0,0,0.5)", position: "relative"
+          }}>
+            <button 
+              onClick={() => setShowAddModal(false)}
+              style={{
+                position: "absolute", top: "15px", right: "20px", background: "transparent",
+                border: "none", color: "var(--text-secondary)", fontSize: "1.5rem", cursor: "pointer"
+              }}
+            >×</button>
+            <h2 style={{ fontSize: "1.5rem", fontWeight: 800, marginBottom: "15px", color: "white" }}>¡Sumá tu iglesia al mapa!</h2>
+            <p style={{ color: "var(--text-secondary)", fontSize: "0.95rem", lineHeight: 1.5, marginBottom: "25px" }}>
+              Holyfind usa <strong>OpenStreetMap</strong> (el "Wikipedia" de los mapas). Si tu iglesia no aparece, la forma más rápida es agregarla vos mismo al mapa mundial de forma gratuita y en 2 minutos aparecerá para todos.
+            </p>
+
+            <a 
+              href="https://www.openstreetmap.org/edit" 
+              target="_blank" rel="noopener noreferrer"
+              style={{
+                display: "block", textAlign: "center", background: "#7c3aed", color: "white",
+                textDecoration: "none", padding: "14px", borderRadius: "12px", fontWeight: 700, marginBottom: "20px",
+                boxShadow: "0 4px 15px rgba(124, 58, 237, 0.3)"
+              }}
+            >
+              🗺️ Agregarla en OpenStreetMap (Rápido)
+            </a>
+
+            <div style={{ display: "flex", alignItems: "center", gap: "10px", margin: "20px 0" }}>
+              <div style={{ height: "1px", background: "var(--border)", flex: 1 }}></div>
+              <span style={{ color: "var(--text-secondary)", fontSize: "0.8rem", fontWeight: 600 }}>O ENVIANOS LOS DATOS</span>
+              <div style={{ height: "1px", background: "var(--border)", flex: 1 }}></div>
+            </div>
+
+            <form onSubmit={(e) => {
+              e.preventDefault();
+              alert("¡Gracias! Procesaremos la solicitud pronto. Para resultados inmediatos, te recomendamos agregarla directamente en OpenStreetMap arriba.");
+              setShowAddModal(false);
+            }}>
+              <div style={{ marginBottom: "15px" }}>
+                <label style={{ display: "block", fontSize: "0.85rem", color: "var(--text-secondary)", marginBottom: "6px" }}>Nombre de la iglesia</label>
+                <input type="text" required placeholder="Ej: Iglesia Bautista Emmanuel" style={{ width: "100%", padding: "12px", borderRadius: "10px", border: "1px solid var(--border)", background: "rgba(255,255,255,0.05)", color: "white" }} />
+              </div>
+              <div style={{ marginBottom: "15px" }}>
+                <label style={{ display: "block", fontSize: "0.85rem", color: "var(--text-secondary)", marginBottom: "6px" }}>Dirección exacta o Ciudad</label>
+                <input type="text" required placeholder="Ej: Av. San Martín 1234, Córdoba" style={{ width: "100%", padding: "12px", borderRadius: "10px", border: "1px solid var(--border)", background: "rgba(255,255,255,0.05)", color: "white" }} />
+              </div>
+              <button type="submit" style={{
+                width: "100%", background: "transparent", color: "white", border: "1px solid var(--border)",
+                padding: "12px", borderRadius: "10px", fontWeight: 600, cursor: "pointer", marginTop: "10px"
+              }}>
+                Enviar solicitud manual
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
