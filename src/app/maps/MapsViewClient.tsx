@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import Script from "next/script";
 import MapLoader from "@/components/MapLoader";
 import { useSession, signOut } from "next-auth/react";
 
@@ -32,9 +31,6 @@ export default function MapsViewClient({ initialChurches }: { initialChurches: C
   const [selectedChurchId, setSelectedChurchId] = useState<string | null>(null);
   const [isPlaceSelected, setIsPlaceSelected] = useState(false);
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-
-  // Google Maps Integration
-  const [googleMapsLoaded, setGoogleMapsLoaded] = useState(false);
 
   // Add Church Modal
   const [showAddModal, setShowAddModal] = useState(false);
@@ -79,9 +75,9 @@ export default function MapsViewClient({ initialChurches }: { initialChurches: C
         desc: c.address
       }));
 
-      // Fetch Google Places Autocomplete if available
+      // Use Google Places Autocomplete if available (loaded by MapComponent)
       const w = window as any;
-      if (googleMapsLoaded && w.google) {
+      if (w.google?.maps?.places) {
         try {
           const autocompleteService = new w.google.maps.places.AutocompleteService();
           autocompleteService.getPlacePredictions({ input: searchTerm }, (predictions: any, status: any) => {
@@ -93,31 +89,16 @@ export default function MapsViewClient({ initialChurches }: { initialChurches: C
               type: 'place',
               id: p.place_id,
               display_name: p.description,
-              lat: null, // will fetch from geocoder on click
+              lat: null,
               lon: null
             }));
             setSuggestions([...churchMatches, ...placeMatches]);
           });
         } catch (err) {
-          console.error("Google Autocomplete error", err);
           setSuggestions(churchMatches);
         }
       } else {
-        // Fallback to Nominatim if Google Maps isn't loaded
-        try {
-          const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchTerm)}&limit=4`);
-          const data = await res.json();
-          const placeMatches = data.map((d: any) => ({
-            type: 'place',
-            display_name: d.display_name,
-            lat: parseFloat(d.lat),
-            lon: parseFloat(d.lon),
-          }));
-          setSuggestions([...churchMatches, ...placeMatches]);
-        } catch (err) {
-          console.error("Nominatim fetch error", err);
-          setSuggestions(churchMatches);
-        }
+        setSuggestions(churchMatches);
       }
     }, 400);
 
@@ -146,11 +127,10 @@ export default function MapsViewClient({ initialChurches }: { initialChurches: C
     setShowSuggestions(false);
     
     const w = window as any;
-    if (sug.type === 'place' && !sug.lat && googleMapsLoaded && w.google) {
-      // It's a Google Place ID, we need to geocode it
+    if (sug.type === 'place' && !sug.lat && w.google?.maps) {
       const geocoder = new w.google.maps.Geocoder();
       geocoder.geocode({ placeId: sug.id }, (results: any, status: any) => {
-        if (status === w.google.maps.GeocoderStatus.OK && results && results[0]) {
+        if (status === "OK" && results && results[0]) {
           const location = results[0].geometry.location;
           setTargetLocation({ lat: location.lat(), lng: location.lng() });
         }
@@ -158,7 +138,6 @@ export default function MapsViewClient({ initialChurches }: { initialChurches: C
       setIsPlaceSelected(true);
       setSelectedChurchId(null);
     } else if (sug.lat && sug.lon) {
-      // It has coordinates directly (Nominatim or Church)
       setTargetLocation({ lat: sug.lat, lng: sug.lon });
       if (sug.type === 'church') {
         setIsPlaceSelected(false);
@@ -173,11 +152,6 @@ export default function MapsViewClient({ initialChurches }: { initialChurches: C
 
   return (
     <div style={{ height: "100vh", width: "100vw", position: "relative", overflow: "hidden", background: "var(--bg-gradient-start)" }}>
-      <Script 
-        src={`https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "AIzaSyDSbH5uE_BwS00ZxTstjMb7b8K-SOyWwkU"}&libraries=places`} 
-        strategy="lazyOnload" 
-        onLoad={() => setGoogleMapsLoaded(true)} 
-      />
       
       {/* Top Bar */}
       <div style={{

@@ -1,7 +1,28 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import "leaflet/dist/leaflet.css";
+
+const GOOGLE_MAPS_API_KEY = "AIzaSyDSbH5uE_BwS00ZxTstjMb7b8K-SOyWwkU";
+const SEARCH_RADIUS = 5000; // 5km
+
+const TYPE_COLORS: Record<string, string> = {
+  "Católica":             "#818cf8",
+  "Cristiana Evangélica": "#f472b6",
+  "Cristiana":            "#c084fc",
+  "Islam":                "#34d399",
+  "Judaísmo":             "#60a5fa",
+  "Otro":                 "#94a3b8",
+};
+
+const TYPE_EMOJI: Record<string, string> = {
+  "Católica":             "⛪",
+  "Cristiana Evangélica": "✝️",
+  "Cristiana":            "✝️",
+  "Islam":                "🕌",
+  "Judaísmo":             "🕍",
+  "Otro":                 "🙏",
+};
 
 type Church = {
   id: string;
@@ -18,33 +39,126 @@ type Props = {
   churches: Church[];
   targetLocation?: { lat: number; lng: number } | null;
   selectedChurchId?: string | null;
-  googleMapsLoaded?: boolean;
 };
 
-const GOOGLE_MAPS_API_KEY = "AIzaSyDSbH5uE_BwS00ZxTstjMb7b8K-SOyWwkU";
+function classifyByName(name: string): string {
+  const n = name.toLowerCase();
+  if (n.includes("mezquita") || n.includes("mosque")) return "Islam";
+  if (n.includes("sinagoga") || n.includes("synagogue")) return "Judaísmo";
+  if (n.includes("catolic") || n.includes("católic") || n.includes("parroquia") || n.includes("basílica") || n.includes("basilica")) return "Católica";
+  if (n.includes("evangel") || n.includes("baptist") || n.includes("pentecostal") || n.includes("metodist") || n.includes("presbiteri") || n.includes("luteran")) return "Cristiana Evangélica";
+  if (n.includes("iglesia") || n.includes("church") || n.includes("congregac") || n.includes("capilla") || n.includes("templo") || n.includes("ministerio")) return "Cristiana";
+  return "Otro";
+}
 
-const typeColors: Record<string, string> = {
-  "Católica":             "#818cf8",
-  "Cristiana Evangélica": "#f472b6",
-  "Cristiana":            "#c084fc",
-  "Ortodoxa":             "#a78bfa",
-  "Islam":                "#34d399",
-  "Judaísmo":             "#60a5fa",
-  "Otro":                 "#94a3b8",
-};
+function buildPopupHTML(name: string, type: string, address: string, lat: number, lng: number): string {
+  const color = TYPE_COLORS[type] || "#94a3b8";
+  const emoji = TYPE_EMOJI[type] || "⛪";
+  return `
+    <div style="font-family:system-ui,sans-serif;min-width:210px;padding:4px 0;">
+      <span style="background:${color};color:white;border-radius:99px;padding:2px 10px;font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;">${emoji} ${type}</span>
+      <h4 style="margin:8px 0 4px;color:#1e293b;font-size:0.98rem;font-weight:800;line-height:1.3;">${name}</h4>
+      <p style="margin:0 0 10px;font-size:0.82rem;color:#64748b;">📍 ${address}</p>
+      <a href="https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}" target="_blank" rel="noopener noreferrer"
+        style="display:flex;align-items:center;justify-content:center;gap:6px;background:#4f46e5;color:white;text-decoration:none;padding:8px;border-radius:10px;font-size:0.85rem;font-weight:600;width:100%;">
+        🧭 Cómo llegar
+      </a>
+    </div>
+  `;
+}
 
-export default function MapComponent({ churches, targetLocation, selectedChurchId, googleMapsLoaded }: Props) {
-  const mapRef = useRef<HTMLDivElement>(null);
-  const mapInstanceRef = useRef<any>(null);
-  const markersRef = useRef<any[]>([]);
+function makePinIcon(L: any, color: string, emoji: string) {
+  return L.divIcon({
+    className: "",
+    html: `<div style="background:${color};width:32px;height:32px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);display:flex;align-items:center;justify-content:center;box-shadow:0 3px 10px rgba(0,0,0,0.35);border:2px solid rgba(255,255,255,0.85);"><span style="transform:rotate(45deg);font-size:14px;line-height:1;">${emoji}</span></div>`,
+    iconSize: [32, 32],
+    iconAnchor: [16, 32],
+  });
+}
+
+export default function MapComponent({ churches, targetLocation }: Props) {
+  const mapDivRef = useRef<HTMLDivElement>(null);
+  const mapRef = useRef<any>(null);
   const userMarkerRef = useRef<any>(null);
-  const [isLoadingPlaces, setIsLoadingPlaces] = useState(false);
+  const googleMarkersRef = useRef<any[]>([]);
+  const userLocationRef = useRef<{ lat: number; lng: number } | null>(null);
+  const [status, setStatus] = useState("Iniciando mapa...");
   const [placesCount, setPlacesCount] = useState(0);
+  const [isSearching, setIsSearching] = useState(false);
 
-  // Initialise the Leaflet map once
+  // ── 1. Load Google Maps script once ─────────────────────────────────────
   useEffect(() => {
-    if (typeof window === "undefined" || !mapRef.current) return;
+    if ((window as any).__googleMapsScriptAdded) return;
+    (window as any).__googleMapsScriptAdded = true;
+    const script = document.createElement("script");
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAPS_API_KEY}&libraries=places`;
+    script.async = true;
+    script.defer = true;
+    document.head.appendChild(script);
+  }, []);
 
+  // ── 2. Leaflet Google Places search ────────────────────────────────────
+  const searchNearbyChurches = useCallback((map: any, L: any, lat: number, lng: number) => {
+    const g = (window as any).google;
+    if (!g?.maps?.places) return;
+
+    setIsSearching(true);
+
+    // Hidden div required by PlacesService
+    let host = document.getElementById("__places_host");
+    if (!host) {
+      host = document.createElement("div");
+      host.id = "__places_host";
+      host.style.display = "none";
+      document.body.appendChild(host);
+    }
+
+    const service = new g.maps.places.PlacesService(host);
+    const center = new g.maps.LatLng(lat, lng);
+    const keywords = ["iglesia", "church", "templo", "parroquia", "capilla", "mezquita", "sinagoga", "congregacion", "ministerio", "culto"];
+
+    let pending = keywords.length;
+    let found = 0;
+    const seenIds = new Set<string>();
+
+    keywords.forEach((keyword) => {
+      service.nearbySearch(
+        { location: center, radius: SEARCH_RADIUS, keyword },
+        (results: any[], status: string) => {
+          if (status === g.maps.places.PlacesServiceStatus.OK && results) {
+            results.forEach((place) => {
+              if (seenIds.has(place.place_id)) return;
+              seenIds.add(place.place_id);
+
+              const plat = place.geometry.location.lat();
+              const plng = place.geometry.location.lng();
+              const name = place.name || "Iglesia";
+              const type = classifyByName(name);
+              const address = place.vicinity || "Buenos Aires";
+              const color = TYPE_COLORS[type] || "#94a3b8";
+              const emoji = TYPE_EMOJI[type] || "⛪";
+
+              const marker = L.marker([plat, plng], { icon: makePinIcon(L, color, emoji) })
+                .addTo(map)
+                .bindPopup(buildPopupHTML(name, type, address, plat, plng));
+              googleMarkersRef.current.push(marker);
+              found++;
+            });
+          }
+          pending--;
+          if (pending === 0) {
+            setIsSearching(false);
+            setPlacesCount(found);
+            setStatus(found > 0 ? `${found} lugares encontrados` : "No se encontraron resultados cerca");
+          }
+        }
+      );
+    });
+  }, []);
+
+  // ── 3. Init Leaflet map ─────────────────────────────────────────────────
+  useEffect(() => {
+    if (!mapDivRef.current) return;
     const L = require("leaflet");
 
     delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -54,274 +168,131 @@ export default function MapComponent({ churches, targetLocation, selectedChurchI
       shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
     });
 
-    if (mapInstanceRef.current) {
-      mapInstanceRef.current.remove();
-    }
+    if (mapRef.current) mapRef.current.remove();
 
-    const map = L.map(mapRef.current, { zoomControl: true }).setView([-34.6037, -58.3816], 14);
-    mapInstanceRef.current = map;
+    const map = L.map(mapDivRef.current, { zoomControl: true }).setView([-34.6037, -58.3816], 13);
+    mapRef.current = map;
 
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>',
       maxZoom: 19,
     }).addTo(map);
 
-    // Add DB churches
-    addDBChurches(map, L, churches);
+    // Add DB churches immediately
+    churches.forEach((c) => {
+      if (!c.latitude || !c.longitude) return;
+      const type = c.type || "Cristiana";
+      const color = TYPE_COLORS[type] || "#818cf8";
+      const emoji = TYPE_EMOJI[type] || "⛪";
+      L.marker([c.latitude, c.longitude], { icon: makePinIcon(L, color, emoji) })
+        .addTo(map)
+        .bindPopup(buildPopupHTML(c.name, type, c.address, c.latitude, c.longitude));
+    });
 
-    // Ask for location
-    if ("geolocation" in navigator) {
-      navigator.geolocation.getCurrentPosition(
-        (pos) => {
-          const { latitude, longitude } = pos.coords;
-          map.setView([latitude, longitude], 15);
-
-          // "You are here" marker
-          const youIcon = L.divIcon({
-            className: "",
-            html: `<div style="width:20px;height:20px;border-radius:50%;background:#4f46e5;border:3px solid white;box-shadow:0 0 0 4px rgba(79,70,229,0.3);"></div>`,
-            iconSize: [20, 20],
-            iconAnchor: [10, 10],
-          });
-          if (userMarkerRef.current) userMarkerRef.current.remove();
-          userMarkerRef.current = L.marker([latitude, longitude], { icon: youIcon })
-            .addTo(map)
-            .bindPopup("<b>📍 Estás acá</b>")
-            .openPopup();
-
-          // Now fetch nearby churches from Google Places
-          loadGoogleNearbyChurches(map, L, latitude, longitude);
-        },
-        (err) => {
-          console.warn("Geolocalización denegada:", err);
-          // Still try with Buenos Aires default
-          loadGoogleNearbyChurches(map, L, -34.6037, -58.3816);
-        },
-        { enableHighAccuracy: true, timeout: 8000 }
-      );
+    // Geolocation → center map & search Google Places
+    setStatus("Buscando tu ubicación...");
+    if (!("geolocation" in navigator)) {
+      setStatus("Geolocalización no disponible");
+      return;
     }
+
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const lat = pos.coords.latitude;
+        const lng = pos.coords.longitude;
+        userLocationRef.current = { lat, lng };
+        map.setView([lat, lng], 15);
+        setStatus("Ubicación encontrada. Cargando iglesias...");
+
+        // "You are here" blue dot
+        const youIcon = L.divIcon({
+          className: "",
+          html: `<div style="width:18px;height:18px;border-radius:50%;background:#4f46e5;border:3px solid white;box-shadow:0 0 0 5px rgba(79,70,229,0.25);"></div>`,
+          iconSize: [18, 18],
+          iconAnchor: [9, 9],
+        });
+        if (userMarkerRef.current) userMarkerRef.current.remove();
+        userMarkerRef.current = L.marker([lat, lng], { icon: youIcon, zIndexOffset: 1000 })
+          .addTo(map)
+          .bindPopup("<b>📍 Estás acá</b>")
+          .openPopup();
+
+        // Wait for Google Maps to be ready, then search
+        const trySearch = () => {
+          if ((window as any).google?.maps?.places) {
+            searchNearbyChurches(map, L, lat, lng);
+          } else {
+            setTimeout(trySearch, 400);
+          }
+        };
+        trySearch();
+      },
+      (err) => {
+        console.warn("GPS error:", err);
+        setStatus("Ubicación denegada. Mostrando Buenos Aires.");
+        const trySearch = () => {
+          if ((window as any).google?.maps?.places) {
+            searchNearbyChurches(map, L, -34.6037, -58.3816);
+          } else {
+            setTimeout(trySearch, 400);
+          }
+        };
+        trySearch();
+      },
+      { enableHighAccuracy: true, timeout: 8000 }
+    );
 
     return () => {
-      if (mapInstanceRef.current) {
-        mapInstanceRef.current.remove();
-        mapInstanceRef.current = null;
+      if (mapRef.current) {
+        mapRef.current.remove();
+        mapRef.current = null;
       }
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Pan to targetLocation when it changes
+  // ── 4. Pan when targetLocation changes ────────────────────────────────
   useEffect(() => {
-    const map = mapInstanceRef.current;
-    if (!map || !targetLocation) return;
-    map.flyTo([targetLocation.lat, targetLocation.lng], 15, { duration: 1.2 });
+    if (mapRef.current && targetLocation) {
+      mapRef.current.flyTo([targetLocation.lat, targetLocation.lng], 15, { duration: 1.2 });
+    }
   }, [targetLocation]);
-
-  // Re-add DB churches whenever the list changes
-  useEffect(() => {
-    const map = mapInstanceRef.current;
-    if (!map) return;
-    const L = require("leaflet");
-    // Remove old DB markers
-    markersRef.current.forEach((m) => { if (m._isDB) m.remove(); });
-    markersRef.current = markersRef.current.filter((m) => !m._isDB);
-    addDBChurches(map, L, churches);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [churches]);
-
-  function addDBChurches(map: any, L: any, list: Church[]) {
-    list.forEach((c) => {
-      if (!c.latitude || !c.longitude) return;
-      const color = typeColors[c.type ?? ""] || "#818cf8";
-      const icon = makePinIcon(L, color, "⛪");
-      const m = L.marker([c.latitude, c.longitude], { icon })
-        .addTo(map)
-        .bindPopup(buildPopup(c.name, c.type || "Iglesia", c.address, c.latitude, c.longitude));
-      (m as any)._isDB = true;
-      markersRef.current.push(m);
-    });
-  }
-
-  function loadGoogleNearbyChurches(map: any, L: any, lat: number, lng: number) {
-    // We use a hidden div to host the PlacesService (required by the API)
-    const hiddenDiv = document.getElementById("__places_service_host") || (() => {
-      const d = document.createElement("div");
-      d.id = "__places_service_host";
-      d.style.display = "none";
-      document.body.appendChild(d);
-      return d;
-    })();
-
-    function doSearch() {
-      const g = (window as any).google;
-      if (!g) return;
-
-      setIsLoadingPlaces(true);
-
-      const service = new g.maps.places.PlacesService(hiddenDiv);
-      const location = new g.maps.LatLng(lat, lng);
-
-      const KEYWORDS = ["iglesia", "church", "templo", "synagogue", "mosque", "sinagoga", "mezquita", "congregacion", "capilla", "parroquia"];
-      let done = 0;
-      let total = 0;
-      const seenIds = new Set<string>();
-
-      function onResults(results: any[], status: any) {
-        if (status === g.maps.places.PlacesServiceStatus.OK && results) {
-          results.forEach((place: any) => {
-            if (seenIds.has(place.place_id)) return;
-            seenIds.add(place.place_id);
-
-            const plat = place.geometry.location.lat();
-            const plng = place.geometry.location.lng();
-            const name = place.name || "Iglesia";
-            const type = classifyPlace(place);
-            const address = place.vicinity || "Dirección no disponible";
-
-            const icon = makePinIcon(L, typeColors[type] || "#94a3b8", typeEmoji(type));
-            const m = L.marker([plat, plng], { icon })
-              .addTo(map)
-              .bindPopup(buildPopup(name, type, address, plat, plng));
-            (m as any)._isDB = false;
-            markersRef.current.push(m);
-            total++;
-          });
-        }
-        done++;
-        if (done >= KEYWORDS.length) {
-          setIsLoadingPlaces(false);
-          setPlacesCount(total);
-        }
-      }
-
-      KEYWORDS.forEach((keyword) => {
-        service.nearbySearch(
-          { location, radius: 5000, keyword },
-          onResults
-        );
-      });
-    }
-
-    // If google is already loaded, go; else poll briefly
-    if ((window as any).google) {
-      doSearch();
-    } else {
-      let attempts = 0;
-      const interval = setInterval(() => {
-        attempts++;
-        if ((window as any).google) {
-          clearInterval(interval);
-          doSearch();
-        } else if (attempts > 30) {
-          clearInterval(interval);
-          console.warn("Google Maps no se cargó a tiempo.");
-        }
-      }, 500);
-    }
-  }
-
-  function classifyPlace(place: any): string {
-    const name = (place.name || "").toLowerCase();
-    const types: string[] = place.types || [];
-    if (types.includes("mosque") || name.includes("mezquita") || name.includes("mosque")) return "Islam";
-    if (types.includes("synagogue") || name.includes("sinagoga")) return "Judaísmo";
-    if (name.includes("católic") || name.includes("catolic") || name.includes("parroquia") || name.includes("basílica") || name.includes("basilica")) return "Católica";
-    if (name.includes("evangel") || name.includes("baptist") || name.includes("pentecostal") || name.includes("metodist") || name.includes("presbiteri")) return "Cristiana Evangélica";
-    if (types.includes("church") || name.includes("iglesia") || name.includes("church") || name.includes("congregac") || name.includes("capilla")) return "Cristiana";
-    return "Otro";
-  }
-
-  function typeEmoji(type: string): string {
-    const map: Record<string, string> = {
-      "Católica": "⛪", "Cristiana Evangélica": "✝️", "Cristiana": "✝️",
-      "Islam": "🕌", "Judaísmo": "🕍", "Otro": "🙏",
-    };
-    return map[type] || "⛪";
-  }
-
-  function makePinIcon(L: any, color: string, emoji: string) {
-    return L.divIcon({
-      className: "",
-      html: `<div style="
-        background:${color};
-        width:32px;height:32px;
-        border-radius:50% 50% 50% 0;
-        transform:rotate(-45deg);
-        display:flex;align-items:center;justify-content:center;
-        box-shadow:0 3px 10px rgba(0,0,0,0.35);
-        border:2px solid rgba(255,255,255,0.9);
-      "><span style="transform:rotate(45deg);font-size:14px;line-height:1;">${emoji}</span></div>`,
-      iconSize: [32, 32],
-      iconAnchor: [16, 32],
-    });
-  }
-
-  function buildPopup(name: string, type: string, address: string, lat: number, lng: number): string {
-    const color = typeColors[type] || "#818cf8";
-    return `
-      <div style="font-family:Arial,sans-serif;min-width:200px;padding:4px 0;">
-        <span style="background:${color};color:white;border-radius:99px;padding:2px 10px;font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;">${type}</span>
-        <h4 style="margin:8px 0 4px;color:#1e293b;font-size:1rem;font-weight:800;line-height:1.3;">${name}</h4>
-        <p style="margin:0 0 10px;font-size:0.82rem;color:#64748b;">📍 ${address}</p>
-        <a href="https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}" target="_blank"
-          style="display:flex;align-items:center;justify-content:center;gap:6px;background:#4f46e5;color:white;text-decoration:none;padding:8px;border-radius:10px;font-size:0.85rem;font-weight:600;">
-          🧭 Cómo llegar
-        </a>
-      </div>
-    `;
-  }
 
   return (
     <div style={{ position: "relative", width: "100%", height: "100%" }}>
-      {/* Google Maps loader */}
-      <script
-        id="__google_maps_loader"
-        dangerouslySetInnerHTML={{
-          __html: `
-            if (!window.__googleMapsLoaded) {
-              window.__googleMapsLoaded = true;
-              var s = document.createElement('script');
-              s.src = 'https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAPS_API_KEY}&libraries=places';
-              s.async = true;
-              document.head.appendChild(s);
-            }
-          `,
-        }}
-      />
-
-      {/* Loading indicator */}
-      {isLoadingPlaces && (
+      {/* Status bar */}
+      {(isSearching || placesCount === 0) && (
         <div style={{
           position: "absolute", top: 10, left: "50%", transform: "translateX(-50%)",
-          zIndex: 999, background: "rgba(255,255,255,0.95)", backdropFilter: "blur(4px)",
+          zIndex: 999, background: "rgba(255,255,255,0.96)", backdropFilter: "blur(4px)",
           padding: "6px 16px", borderRadius: "12px", fontSize: "0.83rem",
           color: "#334155", border: "1px solid #cbd5e1",
           boxShadow: "0 4px 15px rgba(0,0,0,0.1)", fontWeight: 600,
-          display: "flex", alignItems: "center", gap: "8px",
+          display: "flex", alignItems: "center", gap: "8px", whiteSpace: "nowrap",
         }}>
-          <span style={{ display: "inline-block", animation: "spin 1s linear infinite" }}>🔍</span>
-          Cargando iglesias con Google Maps...
+          {isSearching ? "🔍 Cargando iglesias de Google Maps..." : status}
         </div>
       )}
 
-      {/* Places count badge */}
-      {!isLoadingPlaces && placesCount > 0 && (
+      {/* Count badge */}
+      {!isSearching && placesCount > 0 && (
         <div style={{
           position: "absolute", top: 10, left: "50%", transform: "translateX(-50%)",
-          zIndex: 999, background: "rgba(79,70,229,0.9)", backdropFilter: "blur(4px)",
-          padding: "5px 14px", borderRadius: "12px", fontSize: "0.82rem",
-          color: "white", boxShadow: "0 4px 15px rgba(79,70,229,0.3)", fontWeight: 700,
+          zIndex: 999, background: "rgba(79,70,229,0.92)", backdropFilter: "blur(4px)",
+          padding: "5px 16px", borderRadius: "12px", fontSize: "0.83rem",
+          color: "white", boxShadow: "0 4px 15px rgba(79,70,229,0.35)", fontWeight: 700,
+          whiteSpace: "nowrap",
         }}>
           ⛪ {placesCount} lugares de culto encontrados
         </div>
       )}
 
-      <div ref={mapRef} style={{ width: "100%", height: "100%" }} />
+      <div ref={mapDivRef} style={{ width: "100%", height: "100%" }} />
 
       <style>{`
-        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-        .leaflet-popup-content-wrapper { border-radius: 14px !important; }
-        .leaflet-popup-content { margin: 12px 14px !important; }
+        .leaflet-popup-content-wrapper { border-radius: 14px !important; box-shadow: 0 8px 30px rgba(0,0,0,0.15) !important; }
+        .leaflet-popup-content { margin: 14px 16px !important; }
+        .leaflet-popup-tip-container { display: none; }
       `}</style>
     </div>
   );
