@@ -91,69 +91,75 @@ export default function MapComponent({ churches, targetLocation }: Props) {
     if ((window as any).__googleMapsScriptAdded) return;
     (window as any).__googleMapsScriptAdded = true;
     const script = document.createElement("script");
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAPS_API_KEY}&libraries=places`;
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAPS_API_KEY}&libraries=places&loading=async`;
     script.async = true;
-    script.defer = true;
     document.head.appendChild(script);
   }, []);
 
   // ── 2. Leaflet Google Places search ────────────────────────────────────
-  const searchNearbyChurches = useCallback((map: any, L: any, lat: number, lng: number) => {
+  const searchNearbyChurches = useCallback(async (map: any, L: any, lat: number, lng: number) => {
     const g = (window as any).google;
     if (!g?.maps?.places) return;
 
     setIsSearching(true);
 
-    // Hidden div required by PlacesService
-    let host = document.getElementById("__places_host");
-    if (!host) {
-      host = document.createElement("div");
-      host.id = "__places_host";
-      host.style.display = "none";
-      document.body.appendChild(host);
-    }
+    // New Places API (post March 2025) - replaces deprecated PlacesService
+    const PLACE_TYPES = [
+      "church",
+      "mosque",
+      "synagogue",
+      "hindu_temple",
+      "place_of_worship",
+    ];
 
-    const service = new g.maps.places.PlacesService(host);
-    const center = new g.maps.LatLng(lat, lng);
-    const keywords = ["iglesia", "church", "templo", "parroquia", "capilla", "mezquita", "sinagoga", "congregacion", "ministerio", "culto"];
-
-    let pending = keywords.length;
     let found = 0;
     const seenIds = new Set<string>();
 
-    keywords.forEach((keyword) => {
-      service.nearbySearch(
-        { location: center, radius: SEARCH_RADIUS, keyword },
-        (results: any[], status: string) => {
-          if (status === g.maps.places.PlacesServiceStatus.OK && results) {
-            results.forEach((place) => {
-              if (seenIds.has(place.place_id)) return;
-              seenIds.add(place.place_id);
+    for (const placeType of PLACE_TYPES) {
+      try {
+        const { places } = await g.maps.places.Place.searchNearby({
+          fields: ["displayName", "location", "formattedAddress", "types", "primaryType", "id"],
+          locationRestriction: {
+            circle: {
+              center: { lat, lng },
+              radius: SEARCH_RADIUS,
+            },
+          },
+          includedPrimaryTypes: [placeType],
+          maxResultCount: 20,
+        });
 
-              const plat = place.geometry.location.lat();
-              const plng = place.geometry.location.lng();
-              const name = place.name || "Iglesia";
-              const type = classifyByName(name);
-              const address = place.vicinity || "Buenos Aires";
-              const color = TYPE_COLORS[type] || "#94a3b8";
-              const emoji = TYPE_EMOJI[type] || "⛪";
+        if (places) {
+          for (const place of places) {
+            const placeId = place.id || `${place.location?.lat()}-${place.location?.lng()}`;
+            if (seenIds.has(placeId)) continue;
+            seenIds.add(placeId);
 
-              const marker = L.marker([plat, plng], { icon: makePinIcon(L, color, emoji) })
-                .addTo(map)
-                .bindPopup(buildPopupHTML(name, type, address, plat, plng));
-              googleMarkersRef.current.push(marker);
-              found++;
-            });
-          }
-          pending--;
-          if (pending === 0) {
-            setIsSearching(false);
-            setPlacesCount(found);
-            setStatus(found > 0 ? `${found} lugares encontrados` : "No se encontraron resultados cerca");
+            const plat = place.location?.lat();
+            const plng = place.location?.lng();
+            if (!plat || !plng) continue;
+
+            const name = place.displayName || "Lugar de culto";
+            const type = classifyByName(name);
+            const address = place.formattedAddress || "Buenos Aires";
+            const color = TYPE_COLORS[type] || "#94a3b8";
+            const emoji = TYPE_EMOJI[type] || "⛪";
+
+            const marker = L.marker([plat, plng], { icon: makePinIcon(L, color, emoji) })
+              .addTo(map)
+              .bindPopup(buildPopupHTML(name, type, address, plat, plng));
+            googleMarkersRef.current.push(marker);
+            found++;
           }
         }
-      );
-    });
+      } catch (err: any) {
+        console.error(`Error buscando ${placeType}:`, err?.message || err);
+      }
+    }
+
+    setIsSearching(false);
+    setPlacesCount(found);
+    setStatus(found > 0 ? `${found} lugares encontrados` : "No se encontraron resultados cerca");
   }, []);
 
   // ── 3. Init Leaflet map ─────────────────────────────────────────────────
