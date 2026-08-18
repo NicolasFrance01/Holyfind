@@ -114,7 +114,7 @@ export default function MapsViewClient({ initialChurches }: { initialChurches: C
 
   // Combine DB and OSM churches, removing exact duplicate coordinates if any
   const allPlaces = [...initialChurches, ...osmPlaces];
-  const uniquePlaces = Array.from(new Map(allPlaces.map(p => [\`\${p.latitude},\${p.longitude}\`, p])).values());
+  const uniquePlaces = Array.from(new Map(allPlaces.map(p => [`${p.latitude},${p.longitude}`, p])).values());
 
   const filteredChurches = uniquePlaces.filter((church) => {
     // Filter by type
