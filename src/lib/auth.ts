@@ -1,5 +1,6 @@
 import { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
+import GoogleProvider from "next-auth/providers/google";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 
@@ -11,6 +12,10 @@ export const authOptions: NextAuthOptions = {
     signIn: "/login",
   },
   providers: [
+    GoogleProvider({
+      clientId: process.env.GOOGLE_CLIENT_ID || "",
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET || "",
+    }),
     CredentialsProvider({
       name: "Credentials",
       credentials: {
@@ -49,6 +54,33 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
   callbacks: {
+    async signIn({ user, account, profile }) {
+      if (account?.provider === "google" && user.email) {
+        try {
+          // Check if user already exists in our DB
+          const existingUser = await prisma.user.findUnique({
+            where: { email: user.email },
+          });
+          
+          if (!existingUser) {
+            // Auto-register user with random password so they are saved as a frequent user
+            const randomPassword = await bcrypt.hash(Math.random().toString(36).slice(-10), 10);
+            await prisma.user.create({
+              data: {
+                email: user.email,
+                password: randomPassword,
+                role: "USER",
+              },
+            });
+          }
+          return true; // Allow login
+        } catch (error) {
+          console.error("Error al registrar usuario de Google:", error);
+          return false;
+        }
+      }
+      return true;
+    },
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id;

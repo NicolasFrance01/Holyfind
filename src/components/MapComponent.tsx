@@ -92,15 +92,14 @@ export default function MapComponent({ churches, targetLocation, onPlacesUpdate 
   const mapRef = useRef<any>(null);
   const userMarkerRef = useRef<any>(null);
   const osmMarkersRef = useRef<any[]>([]); // only OSM markers, cleared on each search
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const [status, setStatus] = useState("Iniciando mapa...");
-  const [placesCount, setPlacesCount] = useState(0);
+  
   const [isSearching, setIsSearching] = useState(false);
+  const [showSearchButton, setShowSearchButton] = useState(false);
 
   // ── Overpass search centrado en lat/lng con radio dinámico ──────────────
   const searchOverpass = useCallback(async (map: any, L: any, lat: number, lng: number, radius: number) => {
     setIsSearching(true);
-    setStatus(`Buscando en ${radius >= 1000 ? (radius / 1000).toFixed(0) + " km" : radius + " m"}...`);
+    setShowSearchButton(false);
 
     // Limpiar marcadores OSM anteriores
     osmMarkersRef.current.forEach((m) => m.remove());
@@ -129,7 +128,6 @@ out center tags;`;
       
       const data = await res.json();
 
-      let found = 0;
       const foundOsmPlaces: Church[] = [];
       data.elements.forEach((el: any) => {
         const coords: [number, number] = el.type === "node"
@@ -163,33 +161,17 @@ out center tags;`;
           type,
           imageUrl: null,
         });
-
-        found++;
       });
 
-      setPlacesCount(found);
-      setStatus(found > 0 ? `${found} lugares de culto` : "Sin resultados en esta zona");
       if (onPlacesUpdate) {
         onPlacesUpdate(foundOsmPlaces);
       }
     } catch (err) {
       console.error("Error Overpass:", err);
-      setStatus("Error al cargar iglesias");
     } finally {
       setIsSearching(false);
     }
   }, [onPlacesUpdate]);
-
-  // ── Disparar búsqueda con debounce al mover/zoom ─────────────────────────
-  const scheduleSearch = useCallback((map: any, L: any) => {
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => {
-      const center = map.getCenter();
-      const zoom = map.getZoom();
-      const radius = radiusForZoom(zoom);
-      searchOverpass(map, L, center.lat, center.lng, radius);
-    }, 800); // espera 800ms después de que el usuario deje de mover
-  }, [searchOverpass]);
 
   // ── Init Leaflet map ──────────────────────────────────────────────────────
   useEffect(() => {
@@ -224,19 +206,21 @@ out center tags;`;
         .bindPopup(buildPopupHTML(c.name, type, c.address, c.latitude, c.longitude));
     });
 
-    // ── Evento: mover o cambiar zoom → re-buscar con debounce ──────────────
-    map.on("moveend", () => scheduleSearch(map, L));
-    map.on("zoomend", () => scheduleSearch(map, L));
+    // Eventos de movimiento -> Mostrar botón de "Buscar en esta zona"
+    map.on("moveend", () => {
+      setShowSearchButton(true);
+    });
+    map.on("zoomend", () => {
+      setShowSearchButton(true);
+    });
 
     // ── Geolocalización inicial ─────────────────────────────────────────────
-    setStatus("Buscando tu ubicación...");
-
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         const lat = pos.coords.latitude;
         const lng = pos.coords.longitude;
-        map.setView([lat, lng], 15); // esto dispara moveend → búsqueda automática
-
+        map.setView([lat, lng], 15);
+        
         // Pin "Estás acá"
         const youIcon = L.divIcon({
           className: "",
@@ -249,17 +233,20 @@ out center tags;`;
           .addTo(map)
           .bindPopup("<b>📍 Estás acá</b>")
           .openPopup();
+          
+        // Primera búsqueda automática
+        searchOverpass(map, L, lat, lng, radiusForZoom(15));
       },
       (err) => {
         console.warn("GPS denegado:", err.message);
-        setStatus("GPS denegado. Mostrando Buenos Aires.");
-        // moveend ya se disparó al setView inicial → busca en Buenos Aires
+        // Si no hay GPS, hacer búsqueda en la zona por defecto (Buenos Aires)
+        const center = map.getCenter();
+        searchOverpass(map, L, center.lat, center.lng, radiusForZoom(14));
       },
       { enableHighAccuracy: true, timeout: 8000 }
     );
 
     return () => {
-      if (debounceRef.current) clearTimeout(debounceRef.current);
       if (mapRef.current) {
         mapRef.current.remove();
         mapRef.current = null;
@@ -272,29 +259,50 @@ out center tags;`;
   useEffect(() => {
     if (mapRef.current && targetLocation) {
       mapRef.current.flyTo([targetLocation.lat, targetLocation.lng], 15, { duration: 1.2 });
-      // flyTo dispara moveend → re-busca automáticamente
+      // Al terminar el flyTo se dispara moveend -> mostrará el botón
     }
   }, [targetLocation]);
 
+  const handleManualSearch = () => {
+    if (!mapRef.current) return;
+    const map = mapRef.current;
+    const center = map.getCenter();
+    const zoom = map.getZoom();
+    const L = require("leaflet");
+    searchOverpass(map, L, center.lat, center.lng, radiusForZoom(zoom));
+  };
+
   return (
     <div style={{ position: "relative", width: "100%", height: "100%" }}>
-      {/* Barra de estado */}
-      <div style={{
-        position: "absolute", top: 10, left: "50%", transform: "translateX(-50%)",
-        zIndex: 999, background: isSearching ? "rgba(255,255,255,0.96)" : "rgba(79,70,229,0.92)",
-        backdropFilter: "blur(4px)",
-        padding: "6px 18px", borderRadius: "20px", fontSize: "0.85rem",
-        color: isSearching ? "#334155" : "white",
-        border: isSearching ? "1px solid #cbd5e1" : "none",
-        boxShadow: "0 4px 15px rgba(0,0,0,0.15)", fontWeight: 700,
-        whiteSpace: "nowrap", transition: "all 0.3s",
-        display: "flex", alignItems: "center", gap: "8px"
-      }}>
-        {isSearching && (
-          <div style={{ width: "14px", height: "14px", border: "2px solid #334155", borderTopColor: "transparent", borderRadius: "50%", animation: "spin 1s linear infinite" }} />
-        )}
-        {status}
-      </div>
+      {/* Botón de Buscar en esta zona / Spinner */}
+      {(showSearchButton || isSearching) && (
+        <button 
+          onClick={handleManualSearch}
+          disabled={isSearching}
+          style={{
+            position: "absolute", top: 15, left: "50%", transform: "translateX(-50%)",
+            zIndex: 999, background: isSearching ? "rgba(255,255,255,0.96)" : "#4f46e5",
+            backdropFilter: "blur(4px)", cursor: isSearching ? "default" : "pointer",
+            padding: "8px 20px", borderRadius: "99px", fontSize: "0.85rem",
+            color: isSearching ? "#334155" : "white",
+            border: isSearching ? "1px solid #cbd5e1" : "none",
+            boxShadow: "0 6px 20px rgba(0,0,0,0.2)", fontWeight: 700,
+            whiteSpace: "nowrap", transition: "all 0.3s",
+            display: "flex", alignItems: "center", gap: "8px"
+          }}
+        >
+          {isSearching ? (
+            <>
+              <div style={{ width: "14px", height: "14px", border: "2px solid #334155", borderTopColor: "transparent", borderRadius: "50%", animation: "spin 1s linear infinite" }} />
+              Buscando...
+            </>
+          ) : (
+            <>
+              🔄 Buscar en esta zona
+            </>
+          )}
+        </button>
+      )}
 
       <div ref={mapDivRef} style={{ width: "100%", height: "100%" }} />
 

@@ -268,7 +268,7 @@ export default function MapsViewClient({ initialChurches }: { initialChurches: C
       <div style={{
         position: "absolute", top: "75px", right: sidebarOpen ? "15px" : "-360px",
         width: "360px", maxHeight: "calc(100vh - 90px)",
-        transition: "right 0.3s ease", zIndex: 10,
+        transition: "right 0.3s ease", zIndex: 1000,
         display: "flex", flexDirection: "column", gap: "12px",
         background: "rgba(15,23,42,0.85)",
         backdropFilter: "blur(20px)",
