@@ -115,17 +115,15 @@ export default function MapComponent({ churches, targetLocation }: Props) {
 out center tags;`;
 
     try {
-      // Overpass requiere x-www-form-urlencoded para peticiones POST desde el navegador
-      const params = new URLSearchParams();
-      params.append("data", query.trim());
-
-      const res = await fetch("https://overpass-api.de/api/interpreter", {
+      // Llamamos a nuestra propia API interna de Next.js para evitar problemas de CORS y 406
+      const res = await fetch("/api/overpass", {
         method: "POST",
-        body: params,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ query: query.trim() }),
       });
       
       if (!res.ok) {
-        throw new Error(`Overpass API error: ${res.status} ${res.statusText}`);
+        throw new Error(`Error interno: ${res.status}`);
       }
       
       const data = await res.json();
