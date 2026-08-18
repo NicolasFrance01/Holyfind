@@ -3,9 +3,6 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import "leaflet/dist/leaflet.css";
 
-const GOOGLE_MAPS_API_KEY = "AIzaSyDSbH5uE_BwS00ZxTstjMb7b8K-SOyWwkU";
-const SEARCH_RADIUS = 5000; // 5km
-
 const TYPE_COLORS: Record<string, string> = {
   "Católica":             "#818cf8",
   "Cristiana Evangélica": "#f472b6",
@@ -41,16 +38,6 @@ type Props = {
   selectedChurchId?: string | null;
 };
 
-function classifyByName(name: string): string {
-  const n = name.toLowerCase();
-  if (n.includes("mezquita") || n.includes("mosque")) return "Islam";
-  if (n.includes("sinagoga") || n.includes("synagogue")) return "Judaísmo";
-  if (n.includes("catolic") || n.includes("católic") || n.includes("parroquia") || n.includes("basílica") || n.includes("basilica")) return "Católica";
-  if (n.includes("evangel") || n.includes("baptist") || n.includes("pentecostal") || n.includes("metodist") || n.includes("presbiteri") || n.includes("luteran")) return "Cristiana Evangélica";
-  if (n.includes("iglesia") || n.includes("church") || n.includes("congregac") || n.includes("capilla") || n.includes("templo") || n.includes("ministerio")) return "Cristiana";
-  return "Otro";
-}
-
 function buildPopupHTML(name: string, type: string, address: string, lat: number, lng: number): string {
   const color = TYPE_COLORS[type] || "#94a3b8";
   const emoji = TYPE_EMOJI[type] || "⛪";
@@ -76,46 +63,61 @@ function makePinIcon(L: any, color: string, emoji: string) {
   });
 }
 
+function classifyChurch(religion: string, denom: string): { type: string } {
+  if (denom.includes("evangelical") || denom.includes("protestant") || denom.includes("baptist") || denom.includes("pentecost") || denom.includes("methodist") || denom.includes("lutheran") || denom.includes("presbyterian"))
+    return { type: "Cristiana Evangélica" };
+  if (denom.includes("catholic") || denom.includes("roman_catholic"))
+    return { type: "Católica" };
+  if (religion === "muslim" || religion === "islamic")
+    return { type: "Islam" };
+  if (religion === "jewish")
+    return { type: "Judaísmo" };
+  if (religion.includes("christian"))
+    return { type: "Cristiana" };
+  return { type: "Otro" };
+}
+
+// Radio de búsqueda según el nivel de zoom
+function radiusForZoom(zoom: number): number {
+  if (zoom >= 16) return 1000;
+  if (zoom >= 14) return 2500;
+  if (zoom >= 12) return 5000;
+  if (zoom >= 10) return 12000;
+  return 25000;
+}
+
 export default function MapComponent({ churches, targetLocation }: Props) {
   const mapDivRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<any>(null);
   const userMarkerRef = useRef<any>(null);
-  const googleMarkersRef = useRef<any[]>([]);
-  const userLocationRef = useRef<{ lat: number; lng: number } | null>(null);
+  const osmMarkersRef = useRef<any[]>([]); // only OSM markers, cleared on each search
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [status, setStatus] = useState("Iniciando mapa...");
   const [placesCount, setPlacesCount] = useState(0);
   const [isSearching, setIsSearching] = useState(false);
 
-  // ── 1. Load Google Maps script once ─────────────────────────────────────
-  useEffect(() => {
-    if ((window as any).__googleMapsScriptAdded) return;
-    (window as any).__googleMapsScriptAdded = true;
-    const script = document.createElement("script");
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAPS_API_KEY}&libraries=places&loading=async`;
-    script.async = true;
-    document.head.appendChild(script);
-  }, []);
-
-  // ── 2. Leaflet Google Places search ────────────────────────────────────
-  const searchNearbyChurches = useCallback(async (map: any, L: any, lat: number, lng: number) => {
+  // ── Overpass search centrado en lat/lng con radio dinámico ──────────────
+  const searchOverpass = useCallback(async (map: any, L: any, lat: number, lng: number, radius: number) => {
     setIsSearching(true);
-    setStatus("Cargando iglesias...");
+    setStatus(`Buscando en ${radius >= 1000 ? (radius / 1000).toFixed(0) + " km" : radius + " m"}...`);
 
-    // Exactamente la misma query que usaba old_version/static/js/script.js
-    const query = `
-      [out:json][timeout:25];
-      (
-        node["amenity"="place_of_worship"](around:5000,${lat},${lng});
-        way["amenity"="place_of_worship"](around:5000,${lat},${lng});
-        relation["amenity"="place_of_worship"](around:5000,${lat},${lng});
-      );
-      out center tags;
-    `;
+    // Limpiar marcadores OSM anteriores
+    osmMarkersRef.current.forEach((m) => m.remove());
+    osmMarkersRef.current = [];
+
+    // Igual que old_version/static/js/script.js — body como texto plano (sin encodeURIComponent)
+    const query = `[out:json][timeout:25];
+(
+  node["amenity"="place_of_worship"](around:${radius},${lat},${lng});
+  way["amenity"="place_of_worship"](around:${radius},${lat},${lng});
+  relation["amenity"="place_of_worship"](around:${radius},${lat},${lng});
+);
+out center tags;`;
 
     try {
       const res = await fetch("https://overpass-api.de/api/interpreter", {
         method: "POST",
-        body: "data=" + encodeURIComponent(query.trim()),
+        body: query,   // ← texto plano, como hacía old_version
       });
       const data = await res.json();
 
@@ -124,59 +126,48 @@ export default function MapComponent({ churches, targetLocation }: Props) {
         const coords: [number, number] = el.type === "node"
           ? [el.lat, el.lon]
           : [el.center?.lat, el.center?.lon];
-
         if (!coords[0] || !coords[1]) return;
 
         const tags = el.tags || {};
         const religion = (tags.religion || "").toLowerCase();
         const denom = (tags.denomination || "").toLowerCase();
         const name = tags.name || tags["name:es"] || "Iglesia sin nombre";
-
-        // Misma lógica de clasificación que generarDescripcion() de old_version
-        let type = "Cristiana";
-        let descripcion = "";
-        if (denom.includes("evangelical") || denom.includes("protestant") || denom.includes("baptist") || denom.includes("pentecost") || denom.includes("methodist")) {
-          type = "Cristiana Evangélica";
-          descripcion = `<i style="color:#1388cc;">Evangélica</i>`;
-        } else if (denom.includes("catholic") || denom.includes("roman_catholic")) {
-          type = "Católica";
-          descripcion = `<i style="color:#e4a600;">Católica</i>`;
-        } else if (religion === "muslim" || religion === "islamic") {
-          type = "Islam";
-          descripcion = `<i>Islam</i>`;
-        } else if (religion === "jewish") {
-          type = "Judaísmo";
-          descripcion = `<i>Judaísmo</i>`;
-        } else if (religion.includes("christian")) {
-          type = "Cristiana";
-          descripcion = `<i style="color:#e4a600;">Cristiana</i>`;
-        } else if (religion) {
-          descripcion = `<i>${religion}${denom ? " - " + denom : ""}</i>`;
-        } else {
-          descripcion = `<i>Sin denominación definida</i>`;
-        }
-
+        const { type } = classifyChurch(religion, denom);
         const color = TYPE_COLORS[type] || "#94a3b8";
         const emoji = TYPE_EMOJI[type] || "⛪";
+        const address = tags["addr:street"]
+          ? `${tags["addr:street"]} ${tags["addr:housenumber"] || ""}`.trim()
+          : "Ubicación de OpenStreetMap";
 
-        L.marker(coords, { icon: makePinIcon(L, color, emoji) })
+        const marker = L.marker(coords, { icon: makePinIcon(L, color, emoji) })
           .addTo(map)
-          .bindPopup(buildPopupHTML(name, type, tags["addr:street"] ? `${tags["addr:street"]} ${tags["addr:housenumber"] || ""}`.trim() : "Lugar de culto", coords[0], coords[1]));
-
+          .bindPopup(buildPopupHTML(name, type, address, coords[0], coords[1]));
+        osmMarkersRef.current.push(marker);
         found++;
       });
 
-      setIsSearching(false);
       setPlacesCount(found);
-      setStatus(found > 0 ? `${found} lugares encontrados` : "No se encontraron resultados cerca");
+      setStatus(found > 0 ? `${found} lugares de culto` : "Sin resultados en esta zona");
     } catch (err) {
       console.error("Error Overpass:", err);
-      setIsSearching(false);
       setStatus("Error al cargar iglesias");
+    } finally {
+      setIsSearching(false);
     }
   }, []);
 
-  // ── 3. Init Leaflet map ─────────────────────────────────────────────────
+  // ── Disparar búsqueda con debounce al mover/zoom ─────────────────────────
+  const scheduleSearch = useCallback((map: any, L: any) => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      const center = map.getCenter();
+      const zoom = map.getZoom();
+      const radius = radiusForZoom(zoom);
+      searchOverpass(map, L, center.lat, center.lng, radius);
+    }, 800); // espera 800ms después de que el usuario deje de mover
+  }, [searchOverpass]);
+
+  // ── Init Leaflet map ──────────────────────────────────────────────────────
   useEffect(() => {
     if (!mapDivRef.current) return;
     const L = require("leaflet");
@@ -190,15 +181,15 @@ export default function MapComponent({ churches, targetLocation }: Props) {
 
     if (mapRef.current) mapRef.current.remove();
 
-    const map = L.map(mapDivRef.current, { zoomControl: true }).setView([-34.6037, -58.3816], 13);
+    const map = L.map(mapDivRef.current, { zoomControl: true }).setView([-34.6037, -58.3816], 14);
     mapRef.current = map;
 
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>',
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
       maxZoom: 19,
     }).addTo(map);
 
-    // Add DB churches immediately
+    // Marcadores de la base de datos (fijos, no se borran al mover)
     churches.forEach((c) => {
       if (!c.latitude || !c.longitude) return;
       const type = c.type || "Cristiana";
@@ -209,22 +200,20 @@ export default function MapComponent({ churches, targetLocation }: Props) {
         .bindPopup(buildPopupHTML(c.name, type, c.address, c.latitude, c.longitude));
     });
 
-    // Geolocation → center map & search Google Places
+    // ── Evento: mover o cambiar zoom → re-buscar con debounce ──────────────
+    map.on("moveend", () => scheduleSearch(map, L));
+    map.on("zoomend", () => scheduleSearch(map, L));
+
+    // ── Geolocalización inicial ─────────────────────────────────────────────
     setStatus("Buscando tu ubicación...");
-    if (!("geolocation" in navigator)) {
-      setStatus("Geolocalización no disponible");
-      return;
-    }
 
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         const lat = pos.coords.latitude;
         const lng = pos.coords.longitude;
-        userLocationRef.current = { lat, lng };
-        map.setView([lat, lng], 15);
-        setStatus("Ubicación encontrada. Cargando iglesias...");
+        map.setView([lat, lng], 15); // esto dispara moveend → búsqueda automática
 
-        // "You are here" blue dot
+        // Pin "Estás acá"
         const youIcon = L.divIcon({
           className: "",
           html: `<div style="width:18px;height:18px;border-radius:50%;background:#4f46e5;border:3px solid white;box-shadow:0 0 0 5px rgba(79,70,229,0.25);"></div>`,
@@ -236,76 +225,49 @@ export default function MapComponent({ churches, targetLocation }: Props) {
           .addTo(map)
           .bindPopup("<b>📍 Estás acá</b>")
           .openPopup();
-
-        // Wait for Google Maps to be ready, then search
-        const trySearch = () => {
-          if ((window as any).google?.maps?.places) {
-            searchNearbyChurches(map, L, lat, lng);
-          } else {
-            setTimeout(trySearch, 400);
-          }
-        };
-        trySearch();
       },
       (err) => {
-        console.warn("GPS error:", err);
-        setStatus("Ubicación denegada. Mostrando Buenos Aires.");
-        const trySearch = () => {
-          if ((window as any).google?.maps?.places) {
-            searchNearbyChurches(map, L, -34.6037, -58.3816);
-          } else {
-            setTimeout(trySearch, 400);
-          }
-        };
-        trySearch();
+        console.warn("GPS denegado:", err.message);
+        setStatus("GPS denegado. Mostrando Buenos Aires.");
+        // moveend ya se disparó al setView inicial → busca en Buenos Aires
       },
       { enableHighAccuracy: true, timeout: 8000 }
     );
 
     return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
       if (mapRef.current) {
         mapRef.current.remove();
         mapRef.current = null;
       }
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // ── 4. Pan when targetLocation changes ────────────────────────────────
+  // ── Pan cuando cambia targetLocation (búsqueda de barra) ─────────────────
   useEffect(() => {
     if (mapRef.current && targetLocation) {
       mapRef.current.flyTo([targetLocation.lat, targetLocation.lng], 15, { duration: 1.2 });
+      // flyTo dispara moveend → re-busca automáticamente
     }
   }, [targetLocation]);
 
   return (
     <div style={{ position: "relative", width: "100%", height: "100%" }}>
-      {/* Status bar */}
-      {(isSearching || placesCount === 0) && (
-        <div style={{
-          position: "absolute", top: 10, left: "50%", transform: "translateX(-50%)",
-          zIndex: 999, background: "rgba(255,255,255,0.96)", backdropFilter: "blur(4px)",
-          padding: "6px 16px", borderRadius: "12px", fontSize: "0.83rem",
-          color: "#334155", border: "1px solid #cbd5e1",
-          boxShadow: "0 4px 15px rgba(0,0,0,0.1)", fontWeight: 600,
-          display: "flex", alignItems: "center", gap: "8px", whiteSpace: "nowrap",
-        }}>
-          {isSearching ? "🔍 Cargando iglesias de Google Maps..." : status}
-        </div>
-      )}
-
-      {/* Count badge */}
-      {!isSearching && placesCount > 0 && (
-        <div style={{
-          position: "absolute", top: 10, left: "50%", transform: "translateX(-50%)",
-          zIndex: 999, background: "rgba(79,70,229,0.92)", backdropFilter: "blur(4px)",
-          padding: "5px 16px", borderRadius: "12px", fontSize: "0.83rem",
-          color: "white", boxShadow: "0 4px 15px rgba(79,70,229,0.35)", fontWeight: 700,
-          whiteSpace: "nowrap",
-        }}>
-          ⛪ {placesCount} lugares de culto encontrados
-        </div>
-      )}
+      {/* Barra de estado */}
+      <div style={{
+        position: "absolute", top: 10, left: "50%", transform: "translateX(-50%)",
+        zIndex: 999, background: isSearching ? "rgba(255,255,255,0.96)" : "rgba(79,70,229,0.92)",
+        backdropFilter: "blur(4px)",
+        padding: "5px 16px", borderRadius: "12px", fontSize: "0.83rem",
+        color: isSearching ? "#334155" : "white",
+        border: isSearching ? "1px solid #cbd5e1" : "none",
+        boxShadow: "0 4px 15px rgba(0,0,0,0.15)", fontWeight: 700,
+        whiteSpace: "nowrap", transition: "all 0.3s",
+        display: "flex", alignItems: "center", gap: "8px",
+      }}>
+        {isSearching ? "🔍 Buscando..." : (placesCount > 0 ? `⛪ ${placesCount} lugares de culto` : `ℹ️ ${status}`)}
+      </div>
 
       <div ref={mapDivRef} style={{ width: "100%", height: "100%" }} />
 
