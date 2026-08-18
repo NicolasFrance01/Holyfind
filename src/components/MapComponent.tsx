@@ -98,68 +98,82 @@ export default function MapComponent({ churches, targetLocation }: Props) {
 
   // ── 2. Leaflet Google Places search ────────────────────────────────────
   const searchNearbyChurches = useCallback(async (map: any, L: any, lat: number, lng: number) => {
-    const g = (window as any).google;
-    if (!g?.maps?.places) return;
-
     setIsSearching(true);
+    setStatus("Cargando iglesias...");
 
-    // New Places API (post March 2025) - replaces deprecated PlacesService
-    const PLACE_TYPES = [
-      "church",
-      "mosque",
-      "synagogue",
-      "hindu_temple",
-      "place_of_worship",
-    ];
+    // Exactamente la misma query que usaba old_version/static/js/script.js
+    const query = `
+      [out:json][timeout:25];
+      (
+        node["amenity"="place_of_worship"](around:5000,${lat},${lng});
+        way["amenity"="place_of_worship"](around:5000,${lat},${lng});
+        relation["amenity"="place_of_worship"](around:5000,${lat},${lng});
+      );
+      out center tags;
+    `;
 
-    let found = 0;
-    const seenIds = new Set<string>();
+    try {
+      const res = await fetch("https://overpass-api.de/api/interpreter", {
+        method: "POST",
+        body: "data=" + encodeURIComponent(query.trim()),
+      });
+      const data = await res.json();
 
-    for (const placeType of PLACE_TYPES) {
-      try {
-        const { places } = await g.maps.places.Place.searchNearby({
-          fields: ["displayName", "location", "formattedAddress", "types", "primaryType", "id"],
-          locationRestriction: {
-            circle: {
-              center: { lat, lng },
-              radius: SEARCH_RADIUS,
-            },
-          },
-          includedPrimaryTypes: [placeType],
-          maxResultCount: 20,
-        });
+      let found = 0;
+      data.elements.forEach((el: any) => {
+        const coords: [number, number] = el.type === "node"
+          ? [el.lat, el.lon]
+          : [el.center?.lat, el.center?.lon];
 
-        if (places) {
-          for (const place of places) {
-            const placeId = place.id || `${place.location?.lat()}-${place.location?.lng()}`;
-            if (seenIds.has(placeId)) continue;
-            seenIds.add(placeId);
+        if (!coords[0] || !coords[1]) return;
 
-            const plat = place.location?.lat();
-            const plng = place.location?.lng();
-            if (!plat || !plng) continue;
+        const tags = el.tags || {};
+        const religion = (tags.religion || "").toLowerCase();
+        const denom = (tags.denomination || "").toLowerCase();
+        const name = tags.name || tags["name:es"] || "Iglesia sin nombre";
 
-            const name = place.displayName || "Lugar de culto";
-            const type = classifyByName(name);
-            const address = place.formattedAddress || "Buenos Aires";
-            const color = TYPE_COLORS[type] || "#94a3b8";
-            const emoji = TYPE_EMOJI[type] || "⛪";
-
-            const marker = L.marker([plat, plng], { icon: makePinIcon(L, color, emoji) })
-              .addTo(map)
-              .bindPopup(buildPopupHTML(name, type, address, plat, plng));
-            googleMarkersRef.current.push(marker);
-            found++;
-          }
+        // Misma lógica de clasificación que generarDescripcion() de old_version
+        let type = "Cristiana";
+        let descripcion = "";
+        if (denom.includes("evangelical") || denom.includes("protestant") || denom.includes("baptist") || denom.includes("pentecost") || denom.includes("methodist")) {
+          type = "Cristiana Evangélica";
+          descripcion = `<i style="color:#1388cc;">Evangélica</i>`;
+        } else if (denom.includes("catholic") || denom.includes("roman_catholic")) {
+          type = "Católica";
+          descripcion = `<i style="color:#e4a600;">Católica</i>`;
+        } else if (religion === "muslim" || religion === "islamic") {
+          type = "Islam";
+          descripcion = `<i>Islam</i>`;
+        } else if (religion === "jewish") {
+          type = "Judaísmo";
+          descripcion = `<i>Judaísmo</i>`;
+        } else if (religion.includes("christian")) {
+          type = "Cristiana";
+          descripcion = `<i style="color:#e4a600;">Cristiana</i>`;
+        } else if (religion) {
+          descripcion = `<i>${religion}${denom ? " - " + denom : ""}</i>`;
+        } else {
+          descripcion = `<i>Sin denominación definida</i>`;
         }
-      } catch (err: any) {
-        console.error(`Error buscando ${placeType}:`, err?.message || err);
-      }
-    }
 
-    setIsSearching(false);
-    setPlacesCount(found);
-    setStatus(found > 0 ? `${found} lugares encontrados` : "No se encontraron resultados cerca");
+        const color = TYPE_COLORS[type] || "#94a3b8";
+        const emoji = TYPE_EMOJI[type] || "⛪";
+
+        L.marker(coords, { icon: makePinIcon(L, color, emoji) })
+          .addTo(map)
+          .bindPopup(buildPopupHTML(name, type, tags["addr:street"] ? `${tags["addr:street"]} ${tags["addr:housenumber"] || ""}`.trim() : "Lugar de culto", coords[0], coords[1]));
+
+        found++;
+      });
+
+      setIsSearching(false);
+      setPlacesCount(found);
+      setStatus(found > 0 ? `${found} lugares encontrados` : "No se encontraron resultados cerca");
+    } catch (err) {
+      console.error("Error Overpass:", err);
+      setIsSearching(false);
+      setStatus("Error al cargar iglesias");
+    }
   }, []);
 
   // ── 3. Init Leaflet map ─────────────────────────────────────────────────
