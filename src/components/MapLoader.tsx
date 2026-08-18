@@ -2,7 +2,7 @@
 
 import dynamic from "next/dynamic";
 
-const MapLibreComponent = dynamic(() => import("./MapLibreComponent"), {
+const MapComponent = dynamic(() => import("./MapComponent"), {
   ssr: false,
   loading: () => (
     <div style={{ height: "100%", width: "100%", display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.2)" }}>
@@ -14,4 +14,4 @@ const MapLibreComponent = dynamic(() => import("./MapLibreComponent"), {
   ),
 });
 
-export default MapLibreComponent;
+export default MapComponent;
