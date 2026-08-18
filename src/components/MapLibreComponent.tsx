@@ -79,6 +79,7 @@ export default function MapLibreComponent({ churches, targetLocation, selectedCh
           node["building"="synagogue"](${south},${west},${north},${east});
           node["building"="temple"](${south},${west},${north},${east});
           node["building"="cathedral"](${south},${west},${north},${east});
+          node["name"~"(?i)(iglesia|congregacion|culto|templo|parroquia|capilla|ministerio|sinagoga|mezquita)"](${south},${west},${north},${east});
         );
         out center tags;
       `;
@@ -169,7 +170,8 @@ export default function MapLibreComponent({ churches, targetLocation, selectedCh
 
   const handleMoveEnd = useCallback((e: any) => {
     const map = e.target;
-    if (map.getZoom() > 10) {
+    // Bajamos el zoom a 8 para que se vean desde más lejos
+    if (map.getZoom() > 8) {
       fetchOSMChurches(map.getBounds());
     } else {
       setOsmChurches([]);
@@ -184,7 +186,7 @@ export default function MapLibreComponent({ churches, targetLocation, selectedCh
       }, 500);
     }
     // Also fetch initial OSM if zoomed in
-    if (e.target.getZoom() > 10) {
+    if (e.target.getZoom() > 8) {
       fetchOSMChurches(e.target.getBounds());
     }
   }, [targetLocation]);
@@ -546,7 +548,7 @@ export default function MapLibreComponent({ churches, targetLocation, selectedCh
               })}
             </div>
             <p style={{ color: "#475569", fontSize: "0.62rem", marginTop: "10px", margin: "10px 0 0 0", lineHeight: 1.4 }}>
-              Fuente: OpenStreetMap · Zoom &gt;10 requerido
+              Fuente: OpenStreetMap · Zoom &gt;8 requerido
             </p>
           </div>
         )}
