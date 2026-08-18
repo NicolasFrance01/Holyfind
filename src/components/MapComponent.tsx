@@ -79,6 +79,8 @@ const createIcon = (color: string, emoji: string) => L.divIcon({
   iconAnchor: [15, 30]
 });
 
+import "leaflet/dist/leaflet.css";
+
 // Helper component to handle map events
 function MapEvents({ onMoveEnd, targetLocation }: { onMoveEnd: (map: L.Map) => void, targetLocation: any }) {
   const map = useMapEvents({
@@ -108,10 +110,6 @@ export default function MapComponent({ churches, targetLocation, selectedChurchI
   const [isFetchingOSM, setIsFetchingOSM] = useState(false);
   
   const mapRef = useRef<any>(null);
-
-  useEffect(() => {
-    require("leaflet/dist/leaflet.css");
-  }, []);
 
   const fetchOSMChurches = useCallback(async (map: L.Map) => {
     if (map.getZoom() <= 8) {
