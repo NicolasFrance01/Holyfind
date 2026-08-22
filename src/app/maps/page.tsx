@@ -14,6 +14,10 @@ export default async function MapsPage() {
       description: true,
       type: true,
       imageUrl: true,
+      events: {
+        where: { isPublic: true },
+        orderBy: { eventDate: 'asc' }
+      }
     },
   });
 

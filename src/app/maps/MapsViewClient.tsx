@@ -14,10 +14,12 @@ type Church = {
   description: string | null;
   type: string | null;
   imageUrl: string | null;
+  events?: any[];
 };
 
 export default function MapsViewClient({ initialChurches }: { initialChurches: Church[] }) {
   const { data: session } = useSession();
+  const isAdmin = (session?.user as any)?.role === "SUPERADMIN";
   const [searchTerm, setSearchTerm] = useState("");
   
   // Lista de iglesias de OSM encontradas por el mapa
@@ -242,6 +244,13 @@ export default function MapsViewClient({ initialChurches }: { initialChurches: C
               {session.user.image && (
                 <img src={session.user.image} alt="Perfil" style={{ width: "28px", height: "28px", borderRadius: "50%" }} />
               )}
+              <Link
+                href={isAdmin ? "/admin/maps" : "/dashboard"}
+                className="btn-secondary"
+                style={{ padding: "6px 14px", fontSize: "0.85rem", borderRadius: "10px", textDecoration: "none" }}
+              >
+                {isAdmin ? "⚙️ Admin" : "📋 Mi Panel"}
+              </Link>
               <button onClick={() => signOut({ callbackUrl: "/" })} className="btn-secondary" style={{ padding: "6px 14px", fontSize: "0.85rem", borderRadius: "10px" }}>
                 Salir
               </button>
@@ -261,6 +270,7 @@ export default function MapsViewClient({ initialChurches }: { initialChurches: C
           targetLocation={targetLocation}
           selectedChurchId={selectedChurchId}
           onPlacesUpdate={setOsmPlaces}
+          isAdmin={isAdmin}
         />
       </div>
 

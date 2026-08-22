@@ -12,6 +12,11 @@ export default async function AdminMapsPage() {
   }
 
   const churches = await prisma.church.findMany({
+    include: {
+      managers: {
+        include: { user: true }
+      }
+    },
     orderBy: { createdAt: "desc" },
   });
 

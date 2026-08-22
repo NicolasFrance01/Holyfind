@@ -30,6 +30,7 @@ type Church = {
   description: string | null;
   type: string | null;
   imageUrl: string | null;
+  events?: any[];
 };
 
 type Props = {
@@ -37,20 +38,36 @@ type Props = {
   targetLocation?: { lat: number; lng: number } | null;
   selectedChurchId?: string | null;
   onPlacesUpdate?: (places: Church[]) => void;
+  isAdmin?: boolean;
 };
 
-function buildPopupHTML(name: string, type: string, address: string, lat: number, lng: number): string {
+function buildPopupHTML(name: string, type: string, address: string, lat: number, lng: number, isDB: boolean = false, isAdmin: boolean = false, events: any[] = []): string {
   const color = TYPE_COLORS[type] || "#94a3b8";
   const emoji = TYPE_EMOJI[type] || "⛪";
+  let eventsHtml = '';
+  if (events && events.length > 0) {
+    eventsHtml = '<div style="margin: 10px 0; padding: 10px; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0;">' + 
+      '<h5 style="margin: 0 0 5px 0; font-size: 0.85rem; color: #334155;">📅 Próximos Eventos</h5>' +
+      events.slice(0, 3).map(e => 
+        `<div style="font-size: 0.75rem; color: #475569; margin-bottom: 4px;"><strong>${e.title}</strong> - ${new Date(e.eventDate).toLocaleDateString()}</div>`
+      ).join('') + 
+      '</div>';
+  }
+
+  const importBtn = (isAdmin && !isDB) ? 
+    `<button onclick="window.importOsmChurchToDB('${name.replace(/'/g, "\\'")}', '${type}', '${address.replace(/'/g, "\\'")}', ${lat}, ${lng})" style="margin-top: 8px; width: 100%; padding: 6px; background: #10b981; color: white; border: none; border-radius: 8px; font-size: 0.8rem; font-weight: 600; cursor: pointer;">⬇️ Importar a DB (Admin)</button>` : '';
+
   return `
     <div style="font-family:system-ui,sans-serif;min-width:210px;padding:4px 0;">
       <span style="background:${color};color:white;border-radius:99px;padding:2px 10px;font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;">${emoji} ${type}</span>
       <h4 style="margin:8px 0 4px;color:#1e293b;font-size:0.98rem;font-weight:800;line-height:1.3;">${name}</h4>
       <p style="margin:0 0 10px;font-size:0.82rem;color:#64748b;">📍 ${address}</p>
+      ${eventsHtml}
       <a href="https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}" target="_blank" rel="noopener noreferrer"
         style="display:flex;align-items:center;justify-content:center;gap:6px;background:#4f46e5;color:white;text-decoration:none;padding:8px;border-radius:10px;font-size:0.85rem;font-weight:600;width:100%;">
         🧭 Cómo llegar
       </a>
+      ${importBtn}
     </div>
   `;
 }
@@ -87,7 +104,7 @@ function radiusForZoom(zoom: number): number {
   return 25000;
 }
 
-export default function MapComponent({ churches, targetLocation, onPlacesUpdate }: Props) {
+export default function MapComponent({ churches, targetLocation, onPlacesUpdate, isAdmin = false }: Props) {
   const mapDivRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<any>(null);
   const userMarkerRef = useRef<any>(null);
@@ -148,7 +165,7 @@ out center tags;`;
 
         const marker = L.marker(coords, { icon: makePinIcon(L, color, emoji) })
           .addTo(map)
-          .bindPopup(buildPopupHTML(name, type, address, coords[0], coords[1]));
+          .bindPopup(buildPopupHTML(name, type, address, coords[0], coords[1], false, isAdmin));
         osmMarkersRef.current.push(marker);
 
         foundOsmPlaces.push({
@@ -172,6 +189,26 @@ out center tags;`;
       setIsSearching(false);
     }
   }, [onPlacesUpdate]);
+
+  // ── Funciones globales (para los botones del popup html) ─────────────
+  useEffect(() => {
+    (window as any).importOsmChurchToDB = async (name: string, type: string, address: string, lat: number, lng: number) => {
+      try {
+        const res = await fetch("/api/admin/import-church", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name, type, address, latitude: lat, longitude: lng })
+        });
+        if (res.ok) {
+          alert(`¡${name} importada a la base de datos! Refrescá la página para verla como definitiva.`);
+        } else {
+          alert("Hubo un error al importar. Verifica que seas admin.");
+        }
+      } catch (err) {
+        alert("Error de red al importar");
+      }
+    };
+  }, []);
 
   // ── Init Leaflet map ──────────────────────────────────────────────────────
   useEffect(() => {
@@ -203,7 +240,7 @@ out center tags;`;
       const emoji = TYPE_EMOJI[type] || "⛪";
       L.marker([c.latitude, c.longitude], { icon: makePinIcon(L, color, emoji) })
         .addTo(map)
-        .bindPopup(buildPopupHTML(c.name, type, c.address, c.latitude, c.longitude));
+        .bindPopup(buildPopupHTML(c.name, type, c.address, c.latitude, c.longitude, true, isAdmin, c.events));
     });
 
     // Eventos de movimiento -> Mostrar botón de "Buscar en esta zona"

@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import Link from "next/link";
-import { toggleUserStatus, deleteChurch } from "../actions";
+import { toggleUserStatus, deleteChurch, assignChurchManager, removeChurchManager } from "../actions";
 import { saveChurch } from "@/app/admin/actions";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
@@ -32,6 +32,8 @@ export default function AdminDashboardClient({ churches, users }: { churches: an
   const [activeTab, setActiveTab] = useState("iglesias");
   const [isPending, startTransition] = useTransition();
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
+  const [selectedChurch, setSelectedChurch] = useState<any>(null);
   const [formData, setFormData] = useState<ChurchFormData>(defaultForm);
 
   const handleToggleUser = (id: string, current: boolean) => {
@@ -119,7 +121,7 @@ export default function AdminDashboardClient({ churches, users }: { churches: an
                       <tr style={{ borderBottom: "1px solid var(--glass-border)", textAlign: "left" }}>
                         <th style={{ padding: "12px" }}>Nombre</th>
                         <th style={{ padding: "12px" }}>Dirección</th>
-                        <th style={{ padding: "12px" }}>Tipo</th>
+                        <th style={{ padding: "12px" }}>Dueños</th>
                         <th style={{ padding: "12px" }}>Acciones</th>
                       </tr>
                     </thead>
@@ -128,10 +130,26 @@ export default function AdminDashboardClient({ churches, users }: { churches: an
                         <tr key={c.id} style={{ borderBottom: "1px solid var(--glass-border)" }}>
                           <td style={{ padding: "12px", fontWeight: 600 }}>{c.name}</td>
                           <td style={{ padding: "12px", color: "var(--text-secondary)", fontSize: "0.9rem" }}>{c.address}</td>
-                          <td style={{ padding: "12px", fontSize: "0.9rem" }}>
-                            <span style={{ padding: "4px 8px", background: "rgba(255,255,255,0.05)", borderRadius: "4px" }}>{c.type || "-"}</span>
+                          <td style={{ padding: "12px", fontSize: "0.85rem" }}>
+                            {c.managers && c.managers.length > 0 ? (
+                              <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                                {c.managers.map((m: any) => (
+                                  <div key={m.id} style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                                    <span style={{ color: "var(--text-secondary)" }}>{m.user?.email}</span>
+                                    <button 
+                                      onClick={() => startTransition(() => { removeChurchManager(m.userId, c.id) })}
+                                      style={{ background: "none", border: "none", color: "#ef4444", cursor: "pointer", fontSize: "0.75rem" }}
+                                      disabled={isPending}
+                                    >✖</button>
+                                  </div>
+                                ))}
+                              </div>
+                            ) : (
+                              <span style={{ color: "var(--text-secondary)", fontStyle: "italic" }}>Sin dueño</span>
+                            )}
                           </td>
-                          <td style={{ padding: "12px", display: "flex", gap: "8px" }}>
+                          <td style={{ padding: "12px", display: "flex", gap: "8px", flexWrap: "wrap" }}>
+                            <button className="btn-secondary" style={{ padding: "4px 10px", fontSize: "0.8rem", borderColor: "var(--primary-color)", color: "var(--primary-color)" }} onClick={() => { setSelectedChurch(c); setIsAssignModalOpen(true); }}>Asignar Dueño</button>
                             <button className="btn-secondary" style={{ padding: "4px 10px", fontSize: "0.8rem" }} onClick={() => openModal(c)}>Editar</button>
                             <button className="btn-secondary" style={{ padding: "4px 10px", fontSize: "0.8rem", color: "#ef4444", borderColor: "rgba(239, 68, 68, 0.5)" }} onClick={() => handleDeleteChurch(c.id)}>Eliminar</button>
                           </td>
@@ -240,6 +258,43 @@ export default function AdminDashboardClient({ churches, users }: { churches: an
               <div style={{ display: "flex", gap: "10px", marginTop: "10px", justifyContent: "flex-end" }}>
                 <button type="button" className="btn-secondary" onClick={() => setIsModalOpen(false)}>Cancelar</button>
                 <button type="submit" className="btn-primary" disabled={isPending}>{isPending ? "Guardando..." : "Guardar"}</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+      
+      {/* Assign Modal Form */}
+      {isAssignModalOpen && selectedChurch && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100 }}>
+          <div className="glass-panel" style={{ width: "90%", maxWidth: "500px", padding: "30px", maxHeight: "90vh", overflowY: "auto" }}>
+            <h2 style={{ marginBottom: "20px", fontSize: "1.5rem" }}>Asignar Dueño a {selectedChurch.name}</h2>
+            
+            <form onSubmit={(e) => {
+              e.preventDefault();
+              const formData = new FormData(e.currentTarget);
+              const userId = formData.get("userId") as string;
+              if (userId) {
+                startTransition(async () => {
+                  const res = await assignChurchManager(userId, selectedChurch.id);
+                  if (res.error) alert(res.error);
+                  else setIsAssignModalOpen(false);
+                });
+              }
+            }} style={{ display: "flex", flexDirection: "column", gap: "15px" }}>
+              <div className="form-group">
+                <label className="form-label">Seleccionar Usuario (Cliente)</label>
+                <select name="userId" required className="form-input">
+                  <option value="">Selecciona un usuario...</option>
+                  {users.map(u => (
+                    <option key={u.id} value={u.id}>{u.email}</option>
+                  ))}
+                </select>
+              </div>
+              
+              <div style={{ display: "flex", gap: "10px", marginTop: "10px", justifyContent: "flex-end" }}>
+                <button type="button" className="btn-secondary" onClick={() => setIsAssignModalOpen(false)}>Cancelar</button>
+                <button type="submit" className="btn-primary" disabled={isPending}>{isPending ? "Asignando..." : "Asignar"}</button>
               </div>
             </form>
           </div>
