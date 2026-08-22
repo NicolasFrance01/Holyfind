@@ -18,13 +18,19 @@ export default async function DashboardPage() {
     redirect("/admin/maps");
   }
 
-  if (!user.id) {
+  // Get the user's DB id from email (in case session id is missing)
+  const dbUser = await prisma.user.findUnique({
+    where: { email: user.email || "" },
+    select: { id: true, isActive: true }
+  });
+
+  if (!dbUser || !dbUser.isActive) {
     redirect("/login");
   }
 
   // Get churches managed by this user
   const managedChurches = await prisma.churchManager.findMany({
-    where: { userId: user.id },
+    where: { userId: dbUser.id },
     include: {
       church: {
         include: {
@@ -38,5 +44,5 @@ export default async function DashboardPage() {
 
   const churches = managedChurches.map((m: any) => m.church);
 
-  return <DashboardClient churches={churches} userId={user.id} userEmail={user.email} />;
+  return <DashboardClient churches={churches} userId={dbUser.id} userEmail={user.email} />;
 }

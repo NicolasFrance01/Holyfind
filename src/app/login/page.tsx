@@ -24,10 +24,23 @@ export default function LoginPage() {
     });
 
     if (result?.error) {
-      setError(result.error);
+      // NextAuth wraps the error message
+      const msg = result.error === "CredentialsSignin"
+        ? "Email o contraseña incorrectos"
+        : result.error;
+      setError(msg);
       setLoading(false);
     } else {
-      router.push("/admin/maps"); // Default redirect, can be handled based on role later
+      // Fetch the session to know the user's role
+      const sessionRes = await fetch("/api/auth/session");
+      const sessionData = await sessionRes.json();
+      const role = sessionData?.user?.role;
+
+      if (role === "SUPERADMIN") {
+        router.push("/admin/maps");
+      } else {
+        router.push("/dashboard");
+      }
     }
   };
 

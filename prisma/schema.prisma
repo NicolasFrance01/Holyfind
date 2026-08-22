@@ -22,15 +22,16 @@ enum EventType {
 }
 
 model User {
-  id        String   @id @default(uuid())
-  email     String   @unique
-  password  String
-  name      String?
-  dni       String?
-  role      Role     @default(CLIENT)
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id             String   @id @default(uuid())
+  email          String   @unique
+  password       String
+  name           String?
+  dni            String?
+  role           Role     @default(CLIENT)
+  isActive       Boolean  @default(true)
+  emailConfirmed Boolean  @default(false)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
   churches  ChurchManager[]
 }

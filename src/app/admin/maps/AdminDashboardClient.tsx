@@ -203,9 +203,19 @@ export default function AdminDashboardClient({ churches, users }: { churches: an
                           <td style={{ padding: "12px", color: "var(--text-secondary)", fontSize: "0.9rem" }}>{u.email}</td>
                           <td style={{ padding: "12px", fontSize: "0.9rem", color: "var(--text-secondary)" }}>{u.dni || "-"}</td>
                           <td style={{ padding: "12px" }}>
-                            <span style={{ padding: "4px 8px", borderRadius: "4px", fontSize: "0.8rem", background: u.isActive ? "rgba(52, 211, 153, 0.2)" : "rgba(239, 68, 68, 0.2)", color: u.isActive ? "#34d399" : "#ef4444" }}>
-                              {u.isActive ? "Activo" : "Suspendido"}
-                            </span>
+                            {!u.isActive ? (
+                              <span style={{ padding: "4px 8px", borderRadius: "4px", fontSize: "0.8rem", background: "rgba(239, 68, 68, 0.2)", color: "#ef4444" }}>
+                                Suspendido
+                              </span>
+                            ) : !u.emailConfirmed ? (
+                              <span style={{ padding: "4px 8px", borderRadius: "4px", fontSize: "0.8rem", background: "rgba(251, 191, 36, 0.2)", color: "#fbbf24" }}>
+                                ⏳ Pendiente
+                              </span>
+                            ) : (
+                              <span style={{ padding: "4px 8px", borderRadius: "4px", fontSize: "0.8rem", background: "rgba(52, 211, 153, 0.2)", color: "#34d399" }}>
+                                ✅ Confirmado
+                              </span>
+                            )}
                           </td>
                           <td style={{ padding: "12px", display: "flex", gap: "10px" }}>
                             <button 

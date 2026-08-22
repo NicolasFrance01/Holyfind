@@ -36,7 +36,7 @@ export const authOptions: NextAuthOptions = {
         }
 
         if (!user.isActive) {
-          throw new Error("Tu cuenta ha sido suspendida. Contacta al administrador.");
+          throw new Error("Tu cuenta ha sido suspendida. Contactá al administrador.");
         }
 
         const isValid = await bcrypt.compare(credentials.password, user.password);
@@ -45,9 +45,18 @@ export const authOptions: NextAuthOptions = {
           throw new Error("Contraseña incorrecta");
         }
 
+        // Mark email as confirmed on first successful login
+        if (!user.emailConfirmed) {
+          await prisma.user.update({
+            where: { id: user.id },
+            data: { emailConfirmed: true }
+          });
+        }
+
         return {
           id: user.id,
           email: user.email,
+          name: user.name,
           role: user.role,
         };
       },
