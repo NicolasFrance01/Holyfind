@@ -22,6 +22,7 @@ export default async function AdminMapsPage() {
 
   const users = await prisma.user.findMany({
     where: { role: "CLIENT" },
+    select: { id: true, email: true, name: true, dni: true, isActive: true, createdAt: true },
     orderBy: { createdAt: "desc" },
   });
 

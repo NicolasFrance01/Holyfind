@@ -35,6 +35,14 @@ export default function AdminDashboardClient({ churches, users }: { churches: an
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
   const [selectedChurch, setSelectedChurch] = useState<any>(null);
   const [formData, setFormData] = useState<ChurchFormData>(defaultForm);
+  const [isCreateUserOpen, setIsCreateUserOpen] = useState(false);
+  const [userCreateMsg, setUserCreateMsg] = useState<{ text: string; ok: boolean } | null>(null);
+  const [createUserForm, setCreateUserForm] = useState({ name: "", email: "", dni: "", password: "" });
+
+  const showUserMsg = (text: string, ok: boolean) => {
+    setUserCreateMsg({ text, ok });
+    setTimeout(() => setUserCreateMsg(null), 5000);
+  };
 
   const handleToggleUser = (id: string, current: boolean) => {
     startTransition(() => {
@@ -164,9 +172,16 @@ export default function AdminDashboardClient({ churches, users }: { churches: an
 
           {activeTab === "usuarios" && (
             <div className="glass-panel" style={{ padding: "30px" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "20px" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "20px", alignItems: "center" }}>
                 <h2 style={{ fontSize: "1.8rem" }}>Clientes (Gestores)</h2>
+                <button className="btn-primary" style={{ padding: "8px 16px", fontSize: "0.9rem" }} onClick={() => setIsCreateUserOpen(true)}>+ Nuevo Cliente</button>
               </div>
+
+              {userCreateMsg && (
+                <div style={{ padding: "12px 16px", borderRadius: "10px", marginBottom: "16px", background: userCreateMsg.ok ? "rgba(16,185,129,0.15)" : "rgba(239,68,68,0.15)", border: `1px solid ${userCreateMsg.ok ? "#10b981" : "#ef4444"}`, color: userCreateMsg.ok ? "#10b981" : "#ef4444", fontWeight: 600 }}>
+                  {userCreateMsg.text}
+                </div>
+              )}
               {users.length === 0 ? (
                 <p style={{ color: "var(--text-secondary)" }}>No hay clientes registrados.</p>
               ) : (
@@ -174,7 +189,9 @@ export default function AdminDashboardClient({ churches, users }: { churches: an
                   <table style={{ width: "100%", borderCollapse: "collapse", color: "white", minWidth: "600px" }}>
                     <thead>
                       <tr style={{ borderBottom: "1px solid var(--glass-border)", textAlign: "left" }}>
+                        <th style={{ padding: "12px" }}>Nombre</th>
                         <th style={{ padding: "12px" }}>Email</th>
+                        <th style={{ padding: "12px" }}>DNI</th>
                         <th style={{ padding: "12px" }}>Estado</th>
                         <th style={{ padding: "12px" }}>Acciones</th>
                       </tr>
@@ -182,7 +199,9 @@ export default function AdminDashboardClient({ churches, users }: { churches: an
                     <tbody>
                       {users.map(u => (
                         <tr key={u.id} style={{ borderBottom: "1px solid var(--glass-border)" }}>
-                          <td style={{ padding: "12px" }}>{u.email}</td>
+                          <td style={{ padding: "12px", fontWeight: 600 }}>{u.name || <span style={{ color: "var(--text-secondary)", fontStyle: "italic" }}>Sin nombre</span>}</td>
+                          <td style={{ padding: "12px", color: "var(--text-secondary)", fontSize: "0.9rem" }}>{u.email}</td>
+                          <td style={{ padding: "12px", fontSize: "0.9rem", color: "var(--text-secondary)" }}>{u.dni || "-"}</td>
                           <td style={{ padding: "12px" }}>
                             <span style={{ padding: "4px 8px", borderRadius: "4px", fontSize: "0.8rem", background: u.isActive ? "rgba(52, 211, 153, 0.2)" : "rgba(239, 68, 68, 0.2)", color: u.isActive ? "#34d399" : "#ef4444" }}>
                               {u.isActive ? "Activo" : "Suspendido"}
@@ -295,6 +314,66 @@ export default function AdminDashboardClient({ churches, users }: { churches: an
               <div style={{ display: "flex", gap: "10px", marginTop: "10px", justifyContent: "flex-end" }}>
                 <button type="button" className="btn-secondary" onClick={() => setIsAssignModalOpen(false)}>Cancelar</button>
                 <button type="submit" className="btn-primary" disabled={isPending}>{isPending ? "Asignando..." : "Asignar"}</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+      {/* Create User Modal */}
+      {isCreateUserOpen && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)", backdropFilter: "blur(4px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 200, padding: "20px" }}>
+          <div className="glass-panel" style={{ width: "100%", maxWidth: "480px", padding: "32px", maxHeight: "90vh", overflowY: "auto" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px" }}>
+              <h2 style={{ color: "white", fontSize: "1.4rem", fontWeight: 800 }}>👤 Nuevo Cliente</h2>
+              <button onClick={() => setIsCreateUserOpen(false)} style={{ background: "none", border: "none", color: "var(--text-secondary)", fontSize: "1.5rem", cursor: "pointer" }}>×</button>
+            </div>
+            <p style={{ color: "var(--text-secondary)", fontSize: "0.9rem", marginBottom: "20px" }}>
+              Se creará la cuenta y se le enviará un correo de bienvenida con sus credenciales de acceso.
+            </p>
+            <form onSubmit={async (e) => {
+              e.preventDefault();
+              startTransition(async () => {
+                try {
+                  const res = await fetch("/api/admin/create-user", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(createUserForm)
+                  });
+                  const json = await res.json();
+                  if (!res.ok) {
+                    showUserMsg(`❌ ${json.error}`, false);
+                  } else {
+                    showUserMsg(json.warning || "✅ Cliente creado y correo enviado correctamente", !!json.success);
+                    setIsCreateUserOpen(false);
+                    setCreateUserForm({ name: "", email: "", dni: "", password: "" });
+                  }
+                } catch (err) {
+                  showUserMsg("❌ Error de red al crear el usuario", false);
+                }
+              });
+            }} style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+              <div className="form-group">
+                <label className="form-label">Nombre Completo *</label>
+                <input required className="form-input" placeholder="Ej: Juan Pérez" value={createUserForm.name} onChange={e => setCreateUserForm({ ...createUserForm, name: e.target.value })} />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Email *</label>
+                <input required type="email" className="form-input" placeholder="pastor@iglesia.com" value={createUserForm.email} onChange={e => setCreateUserForm({ ...createUserForm, email: e.target.value })} />
+              </div>
+              <div className="form-group">
+                <label className="form-label">DNI / Documento (opcional)</label>
+                <input className="form-input" placeholder="Ej: 30123456" value={createUserForm.dni} onChange={e => setCreateUserForm({ ...createUserForm, dni: e.target.value })} />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Contraseña *</label>
+                <input required type="text" className="form-input" placeholder="Contraseña que recibirá por email" value={createUserForm.password} onChange={e => setCreateUserForm({ ...createUserForm, password: e.target.value })} />
+                <p style={{ color: "var(--text-secondary)", fontSize: "0.75rem", marginTop: "4px" }}>Esta contraseña será incluida en el correo de bienvenida.</p>
+              </div>
+              <div style={{ display: "flex", gap: "10px", marginTop: "8px" }}>
+                <button type="button" className="btn-secondary" onClick={() => setIsCreateUserOpen(false)} style={{ flex: 1, padding: "12px" }}>Cancelar</button>
+                <button type="submit" className="btn-primary" disabled={isPending} style={{ flex: 2, padding: "12px" }}>
+                  {isPending ? "Creando..." : "✅ Crear y Enviar Email"}
+                </button>
               </div>
             </form>
           </div>
