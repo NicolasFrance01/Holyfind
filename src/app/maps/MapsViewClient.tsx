@@ -256,9 +256,9 @@ export default function MapsViewClient({ initialChurches }: { initialChurches: C
               </button>
             </div>
           ) : (
-            <button onClick={() => signIn("google")} className="btn-primary" style={{ padding: "7px 18px", fontSize: "0.85rem", display: "flex", alignItems: "center", gap: "6px" }}>
-              Registrarse
-            </button>
+            <Link href="/login" className="btn-primary" style={{ padding: "7px 18px", fontSize: "0.85rem", display: "flex", alignItems: "center", gap: "6px", textDecoration: "none" }}>
+              Iniciar Sesión
+            </Link>
           )}
         </div>
       </div>
