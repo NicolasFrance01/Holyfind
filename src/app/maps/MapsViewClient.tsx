@@ -4,6 +4,9 @@ import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import MapLoader from "@/components/MapLoader";
 import { useSession, signIn, signOut } from "next-auth/react";
+import EventsPanel from "@/components/EventsPanel";
+import ChurchDetailModal from "@/components/ChurchDetailModal";
+import { getPublicEvents, getPublicChurchDetail } from "@/app/dashboard/userActions";
 
 type Church = {
   id: string;
@@ -45,6 +48,46 @@ export default function MapsViewClient({ initialChurches }: { initialChurches: C
 
   // Add Church Modal
   const [showAddModal, setShowAddModal] = useState(false);
+
+  // Detail Modal & Events Panel
+  const [detailModalChurch, setDetailModalChurch] = useState<any>(null);
+  const [showEventsPanel, setShowEventsPanel] = useState(false);
+  const [publicEvents, setPublicEvents] = useState<any[]>([]);
+  const [userLikes, setUserLikes] = useState<string[]>([]);
+  const [userSaves, setUserSaves] = useState<string[]>([]);
+  const [userFollows, setUserFollows] = useState<string[]>([]);
+
+  // Fetch user data & public events on load
+  useEffect(() => {
+    async function loadInitial() {
+      try {
+        const events = await getPublicEvents();
+        setPublicEvents(events);
+        
+        if (session?.user) {
+          const res = await fetch("/api/user-data");
+          if (res.ok) {
+            const d = await res.json();
+            setUserLikes(d.likes || []);
+            setUserSaves(d.saves || []);
+            setUserFollows(d.follows || []);
+          }
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    }
+    loadInitial();
+  }, [session]);
+
+  const openChurchDetail = async (id: string) => {
+    try {
+      const data = await getPublicChurchDetail(id);
+      if (data) setDetailModalChurch(data);
+    } catch (e) {
+      console.error(e);
+    }
+  };
 
   const filters = ["Todas", "Católica", "Cristiana Evangélica", "Cristiana", "Islam", "Judaísmo", "Otro"];
 
@@ -319,7 +362,7 @@ export default function MapsViewClient({ initialChurches }: { initialChurches: C
               No se encontraron lugares
             </div>
           ) : filteredChurches.map((church) => (
-            <div key={church.id} className="glass-panel" style={{ padding: "12px", borderRadius: "12px", cursor: "pointer", transition: "all 0.2s" }}
+            <div key={church.id} onClick={() => openChurchDetail(church.id)} className="glass-panel" style={{ padding: "12px", borderRadius: "12px", cursor: "pointer", transition: "all 0.2s" }}
               onMouseEnter={e => (e.currentTarget.style.borderColor = "var(--primary-color)")}
               onMouseLeave={e => (e.currentTarget.style.borderColor = "var(--glass-border)")}
             >
@@ -344,23 +387,40 @@ export default function MapsViewClient({ initialChurches }: { initialChurches: C
         </div>
       </div>
 
-      {/* Floating Add Church Button */}
-      <button 
-        onClick={() => setShowAddModal(true)}
-        style={{
-          position: "absolute", bottom: "30px", right: "20px", zIndex: 15,
-          background: "var(--primary-color)", color: "white",
-          border: "none", borderRadius: "99px", padding: "12px 20px",
-          fontSize: "0.95rem", fontWeight: 700, cursor: "pointer",
-          boxShadow: "0 10px 25px rgba(79, 70, 229, 0.4)",
-          display: "flex", alignItems: "center", gap: "8px",
-          transition: "transform 0.2s, background 0.2s"
-        }}
-        onMouseEnter={e => e.currentTarget.style.transform = "scale(1.05)"}
-        onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}
-      >
-        <span>➕</span> ¿Falta tu iglesia?
-      </button>
+      {/* Floating Buttons: Add Church & Events Panel */}
+      <div style={{ position: "absolute", bottom: "30px", right: "20px", zIndex: 15, display: "flex", flexDirection: "column", gap: "12px" }}>
+        <button 
+          onClick={() => setShowEventsPanel(true)}
+          style={{
+            background: "linear-gradient(135deg, #4f46e5, #ec4899)", color: "white",
+            border: "none", borderRadius: "99px", padding: "12px 20px",
+            fontSize: "0.95rem", fontWeight: 700, cursor: "pointer",
+            boxShadow: "0 10px 25px rgba(236, 72, 153, 0.4)",
+            display: "flex", alignItems: "center", gap: "8px",
+            transition: "transform 0.2s"
+          }}
+          onMouseEnter={e => e.currentTarget.style.transform = "scale(1.05)"}
+          onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}
+        >
+          <span>📅</span> Ver Próximos Eventos
+        </button>
+
+        <button 
+          onClick={() => setShowAddModal(true)}
+          style={{
+            background: "var(--primary-color)", color: "white",
+            border: "none", borderRadius: "99px", padding: "12px 20px",
+            fontSize: "0.95rem", fontWeight: 700, cursor: "pointer",
+            boxShadow: "0 10px 25px rgba(79, 70, 229, 0.4)",
+            display: "flex", alignItems: "center", gap: "8px",
+            transition: "transform 0.2s"
+          }}
+          onMouseEnter={e => e.currentTarget.style.transform = "scale(1.05)"}
+          onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}
+        >
+          <span>➕</span> ¿Falta tu iglesia?
+        </button>
+      </div>
 
       {/* Add Church Modal */}
       {showAddModal && (
@@ -424,6 +484,39 @@ export default function MapsViewClient({ initialChurches }: { initialChurches: C
                 Enviar solicitud manual
               </button>
             </form>
+          </div>
+        </div>
+      )}
+      {/* Detail Modal */}
+      {detailModalChurch && (
+        <ChurchDetailModal
+          church={detailModalChurch}
+          onClose={() => setDetailModalChurch(null)}
+          userId={(session?.user as any)?.id}
+          followingChurchIds={userFollows}
+          likedEventIds={userLikes}
+          savedEventIds={userSaves}
+        />
+      )}
+
+      {/* Events Panel Sidebar */}
+      {showEventsPanel && (
+        <div style={{
+          position: "absolute", top: "65px", bottom: 0, left: 0, width: "380px", maxWidth: "100%",
+          background: "var(--surface)", borderRight: "1px solid var(--glass-border)",
+          zIndex: 1000, display: "flex", flexDirection: "column", boxShadow: "20px 0 40px rgba(0,0,0,0.5)"
+        }}>
+          <div style={{ padding: "16px", display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid var(--glass-border)" }}>
+            <h2 style={{ fontSize: "1.2rem", fontWeight: 800, color: "white", margin: 0 }}>📅 Próximos Eventos</h2>
+            <button onClick={() => setShowEventsPanel(false)} style={{ background: "transparent", border: "none", color: "var(--text-secondary)", fontSize: "1.5rem", cursor: "pointer" }}>×</button>
+          </div>
+          <div style={{ flex: 1, overflow: "hidden" }}>
+            <EventsPanel 
+              events={publicEvents} 
+              userId={(session?.user as any)?.id}
+              likedEventIds={userLikes}
+              savedEventIds={userSaves}
+            />
           </div>
         </div>
       )}
