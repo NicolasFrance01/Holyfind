@@ -199,6 +199,12 @@ out center tags;`;
           description: null,
           type,
           imageUrl: null,
+          phone: null,
+          website: null,
+          instagram: null,
+          youtube: null,
+          facebook: null,
+          whatsapp: null,
         });
       });
 
