@@ -61,8 +61,6 @@ export default function EventsPanel({ events, userId, likedEventIds = [], savedE
   const [localSaves, setLocalSaves] = useState<Set<string>>(new Set(savedEventIds));
   const [carouselIdx, setCarouselIdx] = useState(0);
   const [activeTab, setActiveTab] = useState<"todos" | "guardados">("todos");
-  const [dismissedSpam, setDismissedSpam] = useState<Set<string>>(new Set());
-  const [spamVisible, setSpamVisible] = useState(true);
   const igRef = useRef<HTMLDivElement>(null);
 
   const now = new Date();
@@ -122,15 +120,6 @@ export default function EventsPanel({ events, userId, likedEventIds = [], savedE
       const r = await toggleEventSave(currentUserId, eventId);
       setLocalSaves(prev => { const s = new Set(prev); r.saved ? s.add(eventId) : s.delete(eventId); return s; });
     });
-  };
-
-  const dismissSpam = () => {
-    if (!spamEvent) return;
-    setSpamVisible(false);
-    setTimeout(() => {
-      setDismissedSpam(prev => new Set([...prev, spamEvent.id]));
-      setSpamVisible(true);
-    }, 400);
   };
 
   const EventCard = ({ ev, compact = false }: { ev: any; compact?: boolean }) => {
