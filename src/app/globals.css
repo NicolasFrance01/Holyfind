@@ -17,13 +17,13 @@
 
 /* ────────── MAP POPUP OVERRIDES ────────── */
 .maplibregl-popup-content, .leaflet-popup-content-wrapper {
-  background: rgba(26, 31, 44, 0.5) !important;
+  background: rgba(15, 23, 42, 0.85) !important;
   backdrop-filter: blur(16px) !important;
   -webkit-backdrop-filter: blur(16px) !important;
   padding: 0 !important;
-  box-shadow: 0 15px 40px rgba(0,0,0,0.5) !important;
+  box-shadow: 0 15px 40px rgba(0,0,0,0.6) !important;
   border-radius: 18px !important;
-  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  border: 1px solid rgba(255, 255, 255, 0.25) !important;
 }
 .leaflet-popup-content {
   margin: 0 !important;
@@ -165,21 +165,30 @@ h1, h2, h3, h4, h5, h6 {
 
 /* ────────── GLASS ────────── */
 .glass {
-  background: rgba(255,255,255,0.03);
+  background: rgba(15, 23, 42, 0.6);
   backdrop-filter: blur(24px);
   -webkit-backdrop-filter: blur(24px);
-  border: 1px solid var(--border);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
 }
 
 .glass-strong {
-  background: rgba(255,255,255,0.06);
+  background: rgba(15, 23, 42, 0.8);
   backdrop-filter: blur(32px);
   -webkit-backdrop-filter: blur(32px);
-  border: 1px solid var(--border-strong);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
 }
 
 /* Legacy compat */
-.glass-panel { background: rgba(255,255,255,0.04); backdrop-filter: blur(20px); border: 1px solid var(--border); border-radius: var(--radius-lg); }
+.glass-panel { 
+  background: rgba(15, 23, 42, 0.65); 
+  backdrop-filter: blur(24px); 
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255, 255, 255, 0.15); 
+  border-radius: var(--radius-lg); 
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
 
 /* ────────── BUTTONS ────────── */
 .btn-primary {
