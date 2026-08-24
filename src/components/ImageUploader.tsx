@@ -160,14 +160,17 @@ export default function ImageUploader({
       {imageSrc && (
         <div style={{
           position: "fixed", top: 0, left: 0, right: 0, bottom: 0,
-          background: "rgba(0,0,0,0.9)", zIndex: 9999,
+          background: "rgba(0,0,0,0.95)", zIndex: 9999,
           display: "flex", flexDirection: "column",
+          overflow: "hidden" // Prevent scrolling
         }}>
-          <div style={{ position: "relative", flex: 1 }}>
+          <div style={{ position: "relative", flex: 1, minHeight: 0 }}>
             <Cropper
               image={imageSrc}
               crop={crop}
               zoom={zoom}
+              minZoom={0.2}
+              restrictPosition={false}
               aspect={1}
               cropShape={shape === "circle" ? "round" : "rect"}
               showGrid={false}
@@ -181,7 +184,7 @@ export default function ImageUploader({
               <span style={{ color: "white", fontSize: "0.9rem" }}>Zoom:</span>
               <input 
                 type="range" 
-                min={1} max={3} step={0.1} 
+                min={0.2} max={3} step={0.1} 
                 value={zoom} 
                 onChange={(e) => setZoom(Number(e.target.value))} 
                 style={{ flex: 1, maxWidth: "200px" }}
