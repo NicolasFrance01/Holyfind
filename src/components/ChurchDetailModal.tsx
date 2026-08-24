@@ -163,8 +163,8 @@ export default function ChurchDetailModal({ church, onClose, userId, followingCh
             <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
               {(church.events || []).length === 0 ? (
                 <p style={{ color: "var(--text-secondary)", textAlign: "center", padding: "20px" }}>Sin eventos próximos</p>
-                  {/* Event item */}
-                  <div key={ev.id} style={{ padding: "14px", borderRadius: "12px", border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.03)" }}>
+              ) : (church.events || []).map((ev: any) => (
+                <div key={ev.id} style={{ padding: "14px", borderRadius: "12px", border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.03)" }}>
                     {ev.imageUrl && <img src={ev.imageUrl} alt={ev.title} style={{ width: "100%", height: "120px", objectFit: "contain", background: "rgba(0,0,0,0.4)", borderRadius: "8px", marginBottom: "8px" }} />}
                     <h3 style={{ color: "white", fontSize: "0.95rem", fontWeight: 700, margin: "0 0 4px" }}>{ev.title}</h3>
                     
