@@ -290,14 +290,14 @@ out center tags;`;
         // Pin "Estás acá"
         const youIcon = L.divIcon({
           className: "",
-          html: `<div style="width:18px;height:18px;border-radius:50%;background:#4f46e5;border:3px solid white;box-shadow:0 0 0 5px rgba(79,70,229,0.25);"></div>`,
-          iconSize: [18, 18],
-          iconAnchor: [9, 9],
+          html: `<div class="user-beacon"></div>`,
+          iconSize: [24, 24],
+          iconAnchor: [12, 12],
         });
         if (userMarkerRef.current) userMarkerRef.current.remove();
         userMarkerRef.current = L.marker([lat, lng], { icon: youIcon, zIndexOffset: 1000 })
           .addTo(map)
-          .bindPopup("<b>📍 Estás acá</b>")
+          .bindPopup(`<div style="padding:4px 8px; font-family:system-ui,sans-serif; color:white; background:rgba(15,23,42,0.85); backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px); border:1px solid rgba(255,255,255,0.25); border-radius:12px; box-shadow:0 8px 25px rgba(0,0,0,0.4); text-align:center; font-weight:700; white-space:nowrap;">📍 Estás acá</div>`)
           .openPopup();
           
         // Primera búsqueda automática
