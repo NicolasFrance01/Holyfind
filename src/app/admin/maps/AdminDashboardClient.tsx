@@ -376,8 +376,8 @@ export default function AdminDashboardClient({ churches, users, normalUsers }: {
 
       {/* Modal Form */}
       {isModalOpen && !isPickingLocation && (
-        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 3000 }}>
-          <div className="glass-panel" style={{ width: "90%", maxWidth: "500px", padding: "30px", maxHeight: "90vh", overflowY: "auto" }}>
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.85)", backdropFilter: "blur(8px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 3000 }}>
+          <div className="glass-panel" style={{ width: "90%", maxWidth: "500px", padding: "30px", maxHeight: "90vh", overflowY: "auto", background: "rgba(8, 12, 24, 0.95)", border: "1px solid rgba(99,102,241,0.3)" }}>
             <h2 style={{ marginBottom: "20px", fontSize: "1.5rem" }}>{formData.id ? "Editar Iglesia" : "Nueva Iglesia"}</h2>
             <form onSubmit={handleSaveChurch} style={{ display: "flex", flexDirection: "column", gap: "15px" }}>
               <div className="form-group">
@@ -396,23 +396,24 @@ export default function AdminDashboardClient({ churches, users, normalUsers }: {
                   <option value="Otra">Otra</option>
                 </select>
               </div>
-              <div style={{ display: "flex", gap: "10px", alignItems: "flex-end" }}>
-                <div className="form-group" style={{ flex: 1 }}>
-                  <label className="form-label">Latitud</label>
-                  <input type="number" step="any" className="form-input" value={formData.latitude || ""} onChange={e => setFormData({...formData, latitude: parseFloat(e.target.value) || null})} placeholder="-34.6037" />
+              <div>
+                <label className="form-label" style={{ marginBottom: "8px", display: "block" }}>Ubicación</label>
+                <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+                  <div style={{ flex: 1 }}>
+                    <input type="number" step="any" className="form-input" value={formData.latitude || ""} onChange={e => setFormData({...formData, latitude: parseFloat(e.target.value) || null})} placeholder="Latitud: -34.6037" />
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <input type="number" step="any" className="form-input" value={formData.longitude || ""} onChange={e => setFormData({...formData, longitude: parseFloat(e.target.value) || null})} placeholder="Longitud: -58.3816" />
+                  </div>
+                  <button 
+                    type="button" 
+                    className="btn-secondary" 
+                    style={{ padding: "10px 14px", height: "42px", flexShrink: 0, whiteSpace: "nowrap", display: "flex", alignItems: "center", gap: "6px" }}
+                    onClick={() => setIsPickingLocation(true)}
+                  >
+                    📍 Ubicar en Mapa
+                  </button>
                 </div>
-                <div className="form-group" style={{ flex: 1 }}>
-                  <label className="form-label">Longitud</label>
-                  <input type="number" step="any" className="form-input" value={formData.longitude || ""} onChange={e => setFormData({...formData, longitude: parseFloat(e.target.value) || null})} placeholder="-58.3816" />
-                </div>
-                <button 
-                  type="button" 
-                  className="btn-secondary" 
-                  style={{ padding: "10px", height: "42px", flexShrink: 0 }}
-                  onClick={() => setIsPickingLocation(true)}
-                >
-                  📍 Ubicar en Mapa
-                </button>
               </div>
               <div className="form-group">
                 <label className="form-label">Descripción</label>

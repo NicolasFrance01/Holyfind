@@ -137,7 +137,7 @@ export default function ChurchDetailModal({ church, onClose, userId, followingCh
               {church.instagram && <a href={church.instagram} target="_blank" rel="noopener" style={{ padding: "5px 12px", borderRadius: "8px", textDecoration: "none", fontSize: "0.78rem", fontWeight: 700, background: "linear-gradient(135deg,#f43f5e,#ec4899,#a855f7)", color: "white" }}>📸 Instagram</a>}
               {church.youtube && <a href={church.youtube} target="_blank" rel="noopener" style={{ padding: "5px 12px", borderRadius: "8px", textDecoration: "none", fontSize: "0.78rem", fontWeight: 700, background: "#ef4444", color: "white" }}>▶️ YouTube</a>}
               {church.facebook && <a href={church.facebook} target="_blank" rel="noopener" style={{ padding: "5px 12px", borderRadius: "8px", textDecoration: "none", fontSize: "0.78rem", fontWeight: 700, background: "#3b82f6", color: "white" }}>📘 Facebook</a>}
-              {church.whatsapp && <a href={`https://wa.me/${church.whatsapp.replace(/[^0-9]/g, "")}`} target="_blank" rel="noopener" style={{ padding: "5px 12px", borderRadius: "8px", textDecoration: "none", fontSize: "0.78rem", fontWeight: 700, background: "#22c55e", color: "white" }}>💬 WhatsApp</a>}
+              {church.whatsapp && <a href={church.whatsapp?.trim().startsWith("http") ? church.whatsapp.trim() : `https://wa.me/${church.whatsapp.replace(/[^0-9]/g, "")}`} target="_blank" rel="noopener" style={{ padding: "5px 12px", borderRadius: "8px", textDecoration: "none", fontSize: "0.78rem", fontWeight: 700, background: "#22c55e", color: "white" }}>💬 WhatsApp</a>}
               {church.website && <a href={church.website} target="_blank" rel="noopener" style={{ padding: "5px 12px", borderRadius: "8px", textDecoration: "none", fontSize: "0.78rem", fontWeight: 700, background: "rgba(99,102,241,0.3)", color: "#818cf8", border: "1px solid rgba(99,102,241,0.4)" }}>🌐 Web</a>}
               {church.phone && <a href={`tel:${church.phone}`} style={{ padding: "5px 12px", borderRadius: "8px", textDecoration: "none", fontSize: "0.78rem", fontWeight: 700, background: "rgba(255,255,255,0.08)", color: "var(--text-secondary)", border: "1px solid var(--border)" }}>📞 {church.phone}</a>}
             </div>
@@ -213,7 +213,7 @@ export default function ChurchDetailModal({ church, onClose, userId, followingCh
                 const days: string[] = JSON.parse(act.days || "[]");
                 return (
                   <div key={act.id} style={{ padding: "14px", borderRadius: "12px", border: "1px solid var(--glass-border)", background: "rgba(255,255,255,0.03)" }}>
-                    {act.imageUrl && <img src={act.imageUrl} alt={act.title} style={{ width: "100%", height: "70px", objectFit: "cover", borderRadius: "8px", marginBottom: "8px" }} />}
+                    {act.imageUrl && <img src={act.imageUrl} alt={act.title} style={{ width: "100%", maxHeight: "200px", objectFit: "contain", background: "#060810", borderRadius: "8px", marginBottom: "8px" }} />}
                     <h3 style={{ color: "white", fontSize: "0.9rem", fontWeight: 700, margin: "0 0 4px" }}>{act.title}</h3>
                     {days.length > 0 && <p style={{ color: "var(--text-secondary)", fontSize: "0.8rem", margin: "0 0 2px" }}>📅 {days.map((d: string) => DAY_MAP[d] || d).join(", ")}</p>}
                     {(act.startTime || act.endTime) && <p style={{ color: "var(--text-secondary)", fontSize: "0.8rem", margin: "0 0 6px" }}>🕐 {act.startTime} - {act.endTime}</p>}

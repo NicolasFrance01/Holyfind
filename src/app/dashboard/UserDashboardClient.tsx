@@ -17,6 +17,7 @@ export default function UserDashboardClient({ user, followedChurches, savedEvent
   const [activeSection, setActiveSection] = useState<Section>("perfil");
   const [isPending, startTransition] = useTransition();
   const [msg, setMsg] = useState<{ text: string; ok: boolean } | null>(null);
+  const [selectedChurch, setSelectedChurch] = useState<any>(null);
 
   // Profile form
   const [profileForm, setProfileForm] = useState({
@@ -192,53 +193,107 @@ export default function UserDashboardClient({ user, followedChurches, savedEvent
           {/* ── MI IGLESIA ── */}
           {activeSection === "miIglesia" && (
             <div>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "22px" }}>
-                <h1 style={{ color: "white", fontSize: "1.6rem", fontWeight: 800 }}>⛪ Mi Iglesia</h1>
-                <Link href="/maps" className="btn-primary" style={{ padding: "8px 18px", fontSize: "0.85rem", textDecoration: "none" }}>+ Buscar en el Mapa</Link>
-              </div>
-              {followedChurches.length === 0 ? (
-                <div className="glass-panel" style={{ padding: "50px", textAlign: "center" }}>
-                  <div style={{ fontSize: "3rem", marginBottom: "12px" }}>⛪</div>
-                  <h2 style={{ color: "white" }}>Todavía no seguís ninguna iglesia</h2>
-                  <p style={{ color: "var(--text-secondary)" }}>Encontrá iglesias en el mapa y hacé clic en "Seguir" para verlas acá.</p>
-                  <Link href="/maps" className="btn-primary" style={{ display: "inline-block", marginTop: "16px", padding: "10px 24px", textDecoration: "none" }}>🗺️ Ir al Mapa</Link>
+              {selectedChurch ? (
+                /* ── Church Mini-Landing ── */
+                <div>
+                  <button onClick={() => setSelectedChurch(null)} style={{ display: "flex", alignItems: "center", gap: "6px", background: "none", border: "none", color: "var(--text-secondary)", cursor: "pointer", fontSize: "0.88rem", marginBottom: "20px", padding: 0 }}>
+                    ← Volver a Mis Iglesias
+                  </button>
+                  {/* Hero */}
+                  <div className="glass-panel" style={{ padding: 0, overflow: "hidden", marginBottom: "20px" }}>
+                    <div style={{ height: "100px", background: "linear-gradient(135deg, rgba(99,102,241,0.25), rgba(168,85,247,0.25))", position: "relative" }}>
+                      <div style={{ position: "absolute", bottom: "-32px", left: "24px" }}>
+                        {selectedChurch.imageUrl ? <img src={selectedChurch.imageUrl} alt={selectedChurch.name} style={{ width: "72px", height: "72px", borderRadius: "50%", objectFit: "cover", border: "3px solid rgba(26,31,44,0.8)" }} /> : <div style={{ width: "72px", height: "72px", borderRadius: "50%", background: "rgba(99,102,241,0.3)", border: "3px solid rgba(26,31,44,0.8)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "2rem" }}>⛪</div>}
+                      </div>
+                    </div>
+                    <div style={{ padding: "46px 24px 20px" }}>
+                      <h2 style={{ color: "white", fontSize: "1.4rem", fontWeight: 800, margin: "0 0 4px" }}>{selectedChurch.name}</h2>
+                      {selectedChurch.type && <span style={{ fontSize: "0.72rem", fontWeight: 700, padding: "2px 10px", borderRadius: "99px", background: "rgba(99,102,241,0.2)", color: "#818cf8" }}>{selectedChurch.type}</span>}
+                      {selectedChurch.description && <p style={{ color: "var(--text-secondary)", lineHeight: "1.7", marginTop: "12px" }}>{selectedChurch.description}</p>}
+                    </div>
+                  </div>
+
+                  {/* Social links */}
+                  {(selectedChurch.instagram || selectedChurch.youtube || selectedChurch.facebook || selectedChurch.whatsapp || selectedChurch.website || selectedChurch.phone) && (
+                    <div className="glass-panel" style={{ padding: "16px", marginBottom: "16px" }}>
+                      <p style={{ color: "var(--text-secondary)", fontSize: "0.75rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: "10px" }}>Contacto</p>
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
+                        {selectedChurch.instagram && <a href={selectedChurch.instagram} target="_blank" rel="noopener" style={{ padding: "6px 14px", borderRadius: "8px", textDecoration: "none", fontSize: "0.82rem", fontWeight: 700, background: "linear-gradient(135deg,#f43f5e,#ec4899,#a855f7)", color: "white" }}>📸 Instagram</a>}
+                        {selectedChurch.youtube && <a href={selectedChurch.youtube} target="_blank" rel="noopener" style={{ padding: "6px 14px", borderRadius: "8px", textDecoration: "none", fontSize: "0.82rem", fontWeight: 700, background: "#ef4444", color: "white" }}>▶️ YouTube</a>}
+                        {selectedChurch.facebook && <a href={selectedChurch.facebook} target="_blank" rel="noopener" style={{ padding: "6px 14px", borderRadius: "8px", textDecoration: "none", fontSize: "0.82rem", fontWeight: 700, background: "#3b82f6", color: "white" }}>📘 Facebook</a>}
+                        {selectedChurch.whatsapp && <a href={selectedChurch.whatsapp?.startsWith("http") ? selectedChurch.whatsapp : `https://wa.me/${selectedChurch.whatsapp.replace(/[^0-9]/g, "")}`} target="_blank" rel="noopener" style={{ padding: "6px 14px", borderRadius: "8px", textDecoration: "none", fontSize: "0.82rem", fontWeight: 700, background: "#22c55e", color: "white" }}>💬 WhatsApp</a>}
+                        {selectedChurch.website && <a href={selectedChurch.website} target="_blank" rel="noopener" style={{ padding: "6px 14px", borderRadius: "8px", textDecoration: "none", fontSize: "0.82rem", fontWeight: 700, background: "rgba(99,102,241,0.3)", color: "#818cf8", border: "1px solid rgba(99,102,241,0.4)" }}>🌐 Sitio Web</a>}
+                        {selectedChurch.phone && <a href={`tel:${selectedChurch.phone}`} style={{ padding: "6px 14px", borderRadius: "8px", textDecoration: "none", fontSize: "0.82rem", fontWeight: 700, background: "rgba(255,255,255,0.06)", color: "var(--text-secondary)", border: "1px solid var(--border)" }}>📞 {selectedChurch.phone}</a>}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Próximos Eventos */}
+                  {selectedChurch.events?.length > 0 && (
+                    <div className="glass-panel" style={{ padding: "20px", marginBottom: "16px" }}>
+                      <p style={{ color: "var(--text-secondary)", fontSize: "0.75rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: "12px" }}>📅 Próximos Eventos</p>
+                      <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                        {selectedChurch.events.map((ev: any) => (
+                          <div key={ev.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px", background: "rgba(99,102,241,0.06)", borderRadius: "10px", border: "1px solid rgba(99,102,241,0.15)" }}>
+                            <span style={{ color: "white", fontSize: "0.88rem", fontWeight: 600 }}>📅 {ev.title}</span>
+                            <span style={{ color: "var(--text-secondary)", fontSize: "0.78rem" }}>{new Date(ev.eventDate).toLocaleDateString("es-AR")}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Actividades */}
+                  {selectedChurch.activities?.length > 0 && (
+                    <div className="glass-panel" style={{ padding: "20px" }}>
+                      <p style={{ color: "var(--text-secondary)", fontSize: "0.75rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: "12px" }}>🏃 Actividades</p>
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
+                        {selectedChurch.activities.map((act: any) => (
+                          <span key={act.id} style={{ padding: "5px 12px", borderRadius: "99px", fontSize: "0.8rem", background: "rgba(99,102,241,0.15)", color: "#818cf8", border: "1px solid rgba(99,102,241,0.2)" }}>🏃 {act.title}</span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  <div style={{ marginTop: "16px" }}>
+                    <button onClick={() => doUnfollow(selectedChurch.id)} className="btn-secondary" style={{ padding: "8px 20px", fontSize: "0.85rem", color: "#f87171", borderColor: "rgba(239,68,68,0.3)" }}>Dejar de seguir esta iglesia</button>
+                  </div>
                 </div>
               ) : (
-                <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
-                  {followedChurches.map((church: any) => (
-                    <div key={church.id} className="glass-panel" style={{ padding: "20px" }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "12px" }}>
-                        <div style={{ display: "flex", gap: "14px", alignItems: "center" }}>
-                          {church.imageUrl ? <img src={church.imageUrl} alt={church.name} style={{ width: "50px", height: "50px", borderRadius: "10px", objectFit: "cover", flexShrink: 0 }} /> : <div style={{ width: "50px", height: "50px", borderRadius: "10px", background: "rgba(99,102,241,0.2)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.5rem", flexShrink: 0 }}>⛪</div>}
-                          <div>
-                            <h3 style={{ color: "white", fontSize: "1rem", fontWeight: 700, margin: "0 0 4px" }}>{church.name}</h3>
-                            <p style={{ color: "var(--text-secondary)", fontSize: "0.8rem", margin: 0 }}>{church.type}</p>
-                          </div>
-                        </div>
-                        <button onClick={() => doUnfollow(church.id)} className="btn-secondary" style={{ padding: "6px 14px", fontSize: "0.8rem", flexShrink: 0 }}>Dejar de seguir</button>
-                      </div>
-                      {church.events?.length > 0 && (
-                        <div style={{ marginTop: "14px", paddingTop: "14px", borderTop: "1px solid var(--border)" }}>
-                          <p style={{ color: "var(--text-secondary)", fontSize: "0.75rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", margin: "0 0 8px" }}>Próximos Eventos</p>
-                          <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                            {church.events.slice(0, 3).map((ev: any) => (
-                              <div key={ev.id} style={{ display: "flex", justifyContent: "space-between", fontSize: "0.85rem" }}>
-                                <span style={{ color: "white" }}>📅 {ev.title}</span>
-                                <span style={{ color: "var(--text-secondary)" }}>{new Date(ev.eventDate).toLocaleDateString("es-AR")}</span>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                      {church.activities?.length > 0 && (
-                        <div style={{ marginTop: "10px", display: "flex", flexWrap: "wrap", gap: "6px" }}>
-                          {church.activities.map((act: any) => (
-                            <span key={act.id} style={{ padding: "3px 10px", borderRadius: "99px", fontSize: "0.75rem", background: "rgba(99,102,241,0.15)", color: "#818cf8", border: "1px solid rgba(99,102,241,0.2)" }}>🏃 {act.title}</span>
-                          ))}
-                        </div>
-                      )}
+                /* ── Church List ── */
+                <div>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "22px" }}>
+                    <h1 style={{ color: "white", fontSize: "1.6rem", fontWeight: 800 }}>⛪ Mi Iglesia</h1>
+                    <Link href="/maps" className="btn-primary" style={{ padding: "8px 18px", fontSize: "0.85rem", textDecoration: "none" }}>+ Buscar en el Mapa</Link>
+                  </div>
+                  {followedChurches.length === 0 ? (
+                    <div className="glass-panel" style={{ padding: "50px", textAlign: "center" }}>
+                      <div style={{ fontSize: "3rem", marginBottom: "12px" }}>⛪</div>
+                      <h2 style={{ color: "white" }}>Todavía no seguís ninguna iglesia</h2>
+                      <p style={{ color: "var(--text-secondary)" }}>Encontrá iglesias en el mapa y hacé clic en "Seguir" para verlas acá.</p>
+                      <Link href="/maps" className="btn-primary" style={{ display: "inline-block", marginTop: "16px", padding: "10px 24px", textDecoration: "none" }}>🗺️ Ir al Mapa</Link>
                     </div>
-                  ))}
+                  ) : (
+                    <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+                      {followedChurches.map((church: any) => (
+                        <div key={church.id} className="glass-panel" style={{ padding: "20px", cursor: "pointer", transition: "border-color 0.2s" }}
+                          onClick={() => setSelectedChurch(church)}
+                          onMouseEnter={e => (e.currentTarget.style.borderColor = "rgba(99,102,241,0.5)")}
+                          onMouseLeave={e => (e.currentTarget.style.borderColor = "var(--glass-border)")}>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px" }}>
+                            <div style={{ display: "flex", gap: "14px", alignItems: "center" }}>
+                              {church.imageUrl ? <img src={church.imageUrl} alt={church.name} style={{ width: "50px", height: "50px", borderRadius: "10px", objectFit: "cover", flexShrink: 0 }} /> : <div style={{ width: "50px", height: "50px", borderRadius: "10px", background: "rgba(99,102,241,0.2)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.5rem", flexShrink: 0 }}>⛪</div>}
+                              <div>
+                                <h3 style={{ color: "white", fontSize: "1rem", fontWeight: 700, margin: "0 0 4px" }}>{church.name}</h3>
+                                <p style={{ color: "var(--text-secondary)", fontSize: "0.8rem", margin: 0 }}>{church.type}</p>
+                              </div>
+                            </div>
+                            <span style={{ color: "#818cf8", fontSize: "0.85rem", flexShrink: 0 }}>Ver detalle →</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               )}
             </div>
