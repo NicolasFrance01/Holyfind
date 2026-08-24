@@ -43,6 +43,10 @@ export default function ChurchDashboardClient({ churches, userId, userEmail }: {
   const [editingActivity, setEditingActivity] = useState<any>(null);
   const [activityForm, setActivityForm] = useState({ ...defaultActivityForm });
 
+  // Delete Modals
+  const [eventToDelete, setEventToDelete] = useState<string | null>(null);
+  const [activityToDelete, setActivityToDelete] = useState<string | null>(null);
+
   // Authorized
   const [authEmail, setAuthEmail] = useState("");
   const [authPerms, setAuthPerms] = useState({ canProfile: false, canEvents: false, canActivities: false, canComments: false });
@@ -101,8 +105,8 @@ export default function ChurchDashboardClient({ churches, userId, userEmail }: {
     });
   };
 
-  const delEvent = (id: string) => { if (!confirm("¿Eliminar este evento?")) return; startTransition(async () => { const r = await deleteEvent(userId, church.id, id); r.error ? showMsg(r.error, false) : showMsg("✅ Evento eliminado", true); }); };
-  const delActivity = (id: string) => { if (!confirm("¿Eliminar esta actividad?")) return; startTransition(async () => { const r = await deleteActivity(userId, church.id, id); r.error ? showMsg(r.error, false) : showMsg("✅ Actividad eliminada", true); }); };
+  const confirmDelEvent = () => { if (!eventToDelete) return; startTransition(async () => { const r = await deleteEvent(userId, church.id, eventToDelete); r.error ? showMsg(r.error, false) : showMsg("✅ Evento eliminado", true); setEventToDelete(null); }); };
+  const confirmDelActivity = () => { if (!activityToDelete) return; startTransition(async () => { const r = await deleteActivity(userId, church.id, activityToDelete); r.error ? showMsg(r.error, false) : showMsg("✅ Actividad eliminada", true); setActivityToDelete(null); }); };
 
   const toggleDay = (key: string) => setActivityForm(f => ({ ...f, days: f.days.includes(key) ? f.days.filter((d: string) => d !== key) : [...f.days, key] }));
 
@@ -252,7 +256,7 @@ export default function ChurchDashboardClient({ churches, userId, userEmail }: {
                           </div>
                           <div style={{ display: "flex", gap: "6px", borderTop: "1px solid var(--border)", paddingTop: "10px" }}>
                             <button className="btn-secondary" onClick={() => openEvent(ev)} style={{ flex: 1, padding: "6px", fontSize: "0.8rem" }}>✏️ Editar</button>
-                            <button onClick={() => delEvent(ev.id)} style={{ flex: 1, padding: "6px", fontSize: "0.8rem", background: "rgba(239,68,68,0.1)", color: "#f87171", border: "1px solid rgba(239,68,68,0.3)", borderRadius: "8px", cursor: "pointer", fontWeight: 600 }}>🗑️ Eliminar</button>
+                            <button onClick={() => setEventToDelete(ev.id)} style={{ flex: 1, padding: "6px", fontSize: "0.8rem", background: "rgba(239,68,68,0.1)", color: "#f87171", border: "1px solid rgba(239,68,68,0.3)", borderRadius: "8px", cursor: "pointer", fontWeight: 600 }}>🗑️ Eliminar</button>
                           </div>
                         </div>
                       );
@@ -290,7 +294,7 @@ export default function ChurchDashboardClient({ churches, userId, userEmail }: {
                           </div>
                           <div style={{ display: "flex", gap: "6px", borderTop: "1px solid var(--border)", paddingTop: "10px" }}>
                             <button className="btn-secondary" onClick={() => openActivity(act)} style={{ flex: 1, padding: "6px", fontSize: "0.8rem" }}>✏️ Editar</button>
-                            <button onClick={() => delActivity(act.id)} style={{ flex: 1, padding: "6px", fontSize: "0.8rem", background: "rgba(239,68,68,0.1)", color: "#f87171", border: "1px solid rgba(239,68,68,0.3)", borderRadius: "8px", cursor: "pointer", fontWeight: 600 }}>🗑️ Eliminar</button>
+                            <button onClick={() => setActivityToDelete(act.id)} style={{ flex: 1, padding: "6px", fontSize: "0.8rem", background: "rgba(239,68,68,0.1)", color: "#f87171", border: "1px solid rgba(239,68,68,0.3)", borderRadius: "8px", cursor: "pointer", fontWeight: 600 }}>🗑️ Eliminar</button>
                           </div>
                         </div>
                       );
@@ -429,7 +433,7 @@ export default function ChurchDashboardClient({ churches, userId, userEmail }: {
             <form onSubmit={saveEvent} style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
               <div className="form-group"><label className="form-label">Nombre del Evento *</label><input required className="form-input" value={eventForm.title} onChange={e => setEventForm({ ...eventForm, title: e.target.value })} /></div>
               <div style={{ display: "flex", gap: "10px" }}>
-                <div className="form-group" style={{ flex: 1 }}><label className="form-label">Tipo</label><select className="form-input" value={eventForm.type} onChange={e => setEventForm({ ...eventForm, type: e.target.value })}>{EVENT_TYPES.map(t => <option key={t}>{EVENT_EMOJI[t]} {t}</option>)}</select></div>
+                <div className="form-group" style={{ flex: 1 }}><label className="form-label">Tipo</label><select className="form-input" value={eventForm.type} onChange={e => setEventForm({ ...eventForm, type: e.target.value })}>{EVENT_TYPES.map(t => <option key={t} value={t}>{EVENT_EMOJI[t]} {t}</option>)}</select></div>
                 <div className="form-group" style={{ flex: 1 }}><label className="form-label">Fecha y Hora *</label><input required type="datetime-local" className="form-input" value={eventForm.eventDate} onChange={e => setEventForm({ ...eventForm, eventDate: e.target.value })} /></div>
               </div>
               <div className="form-group"><label className="form-label">Descripción</label><textarea className="form-input" rows={3} value={eventForm.description} onChange={e => setEventForm({ ...eventForm, description: e.target.value })} /></div>
@@ -443,11 +447,11 @@ export default function ChurchDashboardClient({ churches, userId, userEmail }: {
                 <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", marginBottom: "8px" }}>
                   {eventForm.mediaUrls.map((url: string, i: number) => (
                     <div key={i} style={{ position: "relative" }}>
-                      <img src={url} alt="" style={{ width: "70px", height: "70px", objectFit: "cover", borderRadius: "8px" }} />
+                      <img src={url} alt="" style={{ width: "70px", height: "70px", objectFit: "contain", borderRadius: "8px", background: "rgba(0,0,0,0.3)" }} />
                       <button onClick={() => removeMedia(i, eventForm, setEventForm)} type="button" style={{ position: "absolute", top: "-6px", right: "-6px", background: "#ef4444", border: "none", color: "white", borderRadius: "50%", width: "18px", height: "18px", cursor: "pointer", fontSize: "10px" }}>×</button>
                     </div>
                   ))}
-                  {eventForm.mediaUrls.length < 6 && <ImageUploader onUploaded={url => addMedia(url, eventForm, setEventForm)} folder="event-gallery" placeholder="Agregar foto" size="small" />}
+                  {eventForm.mediaUrls.length < 50 && <ImageUploader onUploaded={url => addMedia(url, eventForm, setEventForm)} folder="event-gallery" placeholder="Agregar foto" size="small" />}
                 </div>
               </div>
               <div className="form-group"><label className="form-label">📢 Notas / Notificación</label><textarea className="form-input" rows={2} value={eventForm.notes} placeholder="Nota que verán los seguidores..." onChange={e => setEventForm({ ...eventForm, notes: e.target.value })} /></div>
@@ -494,14 +498,14 @@ export default function ChurchDashboardClient({ churches, userId, userEmail }: {
               <div className="form-group"><label className="form-label">🎥 Link de Video (YouTube/Instagram)</label><input className="form-input" type="url" placeholder="https://youtube.com/..." value={activityForm.videoUrl} onChange={e => setActivityForm({ ...activityForm, videoUrl: e.target.value })} /></div>
               <div>
                 <label className="form-label" style={{ marginBottom: "8px" }}>📸 Galería de Fotos</label>
-                <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+                <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", marginBottom: "8px" }}>
                   {activityForm.mediaUrls.map((url: string, i: number) => (
                     <div key={i} style={{ position: "relative" }}>
-                      <img src={url} alt="" style={{ width: "70px", height: "70px", objectFit: "cover", borderRadius: "8px" }} />
+                      <img src={url} alt="" style={{ width: "70px", height: "70px", objectFit: "contain", borderRadius: "8px", background: "rgba(0,0,0,0.3)" }} />
                       <button onClick={() => removeMedia(i, activityForm, setActivityForm)} type="button" style={{ position: "absolute", top: "-6px", right: "-6px", background: "#ef4444", border: "none", color: "white", borderRadius: "50%", width: "18px", height: "18px", cursor: "pointer", fontSize: "10px" }}>×</button>
                     </div>
                   ))}
-                  {activityForm.mediaUrls.length < 6 && <ImageUploader onUploaded={url => addMedia(url, activityForm, setActivityForm)} folder="activity-gallery" placeholder="Agregar foto" size="small" />}
+                  {activityForm.mediaUrls.length < 50 && <ImageUploader onUploaded={url => addMedia(url, activityForm, setActivityForm)} folder="activity-gallery" placeholder="Agregar foto" size="small" />}
                 </div>
               </div>
               <div className="form-group"><label className="form-label">📢 Notas / Notificación</label><textarea className="form-input" rows={2} value={activityForm.notes} placeholder="Nota visible para los seguidores..." onChange={e => setActivityForm({ ...activityForm, notes: e.target.value })} /></div>

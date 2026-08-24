@@ -169,10 +169,9 @@ export default function ChurchDetailModal({ church, onClose, userId, followingCh
                   <p style={{ color: "var(--text-secondary)", fontSize: "0.78rem", margin: "0 0 8px" }}>🗓️ {new Date(ev.eventDate).toLocaleString("es-AR", { dateStyle: "long", timeStyle: "short" })}</p>
                   {ev.description && <p style={{ color: "var(--text-secondary)", fontSize: "0.82rem", marginBottom: "8px" }}>{ev.description}</p>}
                   {ev.notes && <p style={{ color: "#818cf8", fontSize: "0.8rem", padding: "6px 10px", background: "rgba(99,102,241,0.1)", borderRadius: "6px", marginBottom: "8px" }}>📢 {ev.notes}</p>}
-                  {/* Carousel */}
                   {ev.media?.length > 0 && (
                     <div style={{ display: "flex", gap: "6px", overflowX: "auto", marginBottom: "8px" }}>
-                      {ev.media.map((m: any, i: number) => <img key={i} src={m.url} alt="" style={{ height: "60px", width: "80px", objectFit: "cover", borderRadius: "6px", flexShrink: 0 }} />)}
+                      {ev.media.map((m: any, i: number) => <img key={i} src={m.url} alt="" style={{ height: "60px", width: "80px", objectFit: "contain", background: "rgba(0,0,0,0.3)", borderRadius: "6px", flexShrink: 0 }} />)}
                     </div>
                   )}
                   {ev.videoUrl && (
@@ -210,7 +209,7 @@ export default function ChurchDetailModal({ church, onClose, userId, followingCh
                     {act.notes && <p style={{ color: "#818cf8", fontSize: "0.8rem", padding: "6px 10px", background: "rgba(99,102,241,0.1)", borderRadius: "6px" }}>📢 {act.notes}</p>}
                     {act.media?.length > 0 && (
                       <div style={{ display: "flex", gap: "6px", overflowX: "auto", marginTop: "8px" }}>
-                        {act.media.map((m: any, i: number) => <img key={i} src={m.url} alt="" style={{ height: "55px", width: "70px", objectFit: "cover", borderRadius: "6px", flexShrink: 0 }} />)}
+                        {act.media.map((m: any, i: number) => <img key={i} src={m.url} alt="" style={{ height: "55px", width: "70px", objectFit: "contain", background: "rgba(0,0,0,0.3)", borderRadius: "6px", flexShrink: 0 }} />)}
                       </div>
                     )}
                     <div style={{ display: "flex", gap: "6px", marginTop: "8px", color: "var(--text-secondary)", fontSize: "0.78rem" }}>
