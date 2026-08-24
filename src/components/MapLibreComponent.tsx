@@ -20,6 +20,7 @@ type Props = {
   churches: Church[];
   targetLocation?: { lat: number; lng: number } | null;
   selectedChurchId?: string | null;
+  onMapClick?: (lat: number, lng: number) => void;
 };
 
 // Dark map style using reliable raster tiles to avoid CORS/HTTPS issues on Vercel
@@ -49,7 +50,7 @@ const MAP_STYLE: any = {
   ]
 };
 
-export default function MapLibreComponent({ churches, targetLocation, selectedChurchId }: Props) {
+export default function MapLibreComponent({ churches, targetLocation, selectedChurchId, onMapClick }: Props) {
   const [popupInfo, setPopupInfo] = useState<Church | null>(null);
   const geolocateRef = useRef<any>(null);
   const mapRef = useRef<MapRef>(null);
@@ -302,6 +303,11 @@ export default function MapLibreComponent({ churches, targetLocation, selectedCh
         mapStyle={MAP_STYLE}
         onLoad={handleMapLoad}
         onMoveEnd={handleMoveEnd}
+        onClick={(e) => {
+          if (onMapClick) {
+            onMapClick(e.lngLat.lat, e.lngLat.lng);
+          }
+        }}
         attributionControl={false}
       >
         {/* Controls */}

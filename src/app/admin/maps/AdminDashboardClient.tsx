@@ -32,8 +32,10 @@ export default function AdminDashboardClient({ churches, users }: { churches: an
   const [activeTab, setActiveTab] = useState("iglesias");
   const [isPending, startTransition] = useTransition();
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isPickingLocation, setIsPickingLocation] = useState(false);
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
   const [selectedChurch, setSelectedChurch] = useState<any>(null);
+  const [churchToDelete, setChurchToDelete] = useState<any>(null);
   const [formData, setFormData] = useState<ChurchFormData>(defaultForm);
   const [isCreateUserOpen, setIsCreateUserOpen] = useState(false);
   const [userCreateMsg, setUserCreateMsg] = useState<{ text: string; ok: boolean } | null>(null);
@@ -50,10 +52,11 @@ export default function AdminDashboardClient({ churches, users }: { churches: an
     });
   };
 
-  const handleDeleteChurch = (id: string) => {
-    if(confirm("¿Estás seguro de que deseas eliminar esta iglesia?")) {
+  const confirmDeleteChurch = () => {
+    if (churchToDelete) {
       startTransition(() => {
-        deleteChurch(id);
+        deleteChurch(churchToDelete.id);
+        setChurchToDelete(null);
       });
     }
   };
@@ -159,7 +162,7 @@ export default function AdminDashboardClient({ churches, users }: { churches: an
                           <td style={{ padding: "12px", display: "flex", gap: "8px", flexWrap: "wrap" }}>
                             <button className="btn-secondary" style={{ padding: "4px 10px", fontSize: "0.8rem", borderColor: "var(--primary-color)", color: "var(--primary-color)" }} onClick={() => { setSelectedChurch(c); setIsAssignModalOpen(true); }}>Asignar Dueño</button>
                             <button className="btn-secondary" style={{ padding: "4px 10px", fontSize: "0.8rem" }} onClick={() => openModal(c)}>Editar</button>
-                            <button className="btn-secondary" style={{ padding: "4px 10px", fontSize: "0.8rem", color: "#ef4444", borderColor: "rgba(239, 68, 68, 0.5)" }} onClick={() => handleDeleteChurch(c.id)}>Eliminar</button>
+                            <button className="btn-secondary" style={{ padding: "4px 10px", fontSize: "0.8rem", color: "#ef4444", borderColor: "rgba(239, 68, 68, 0.5)" }} onClick={() => setChurchToDelete(c)}>Eliminar</button>
                           </td>
                         </tr>
                       ))}
@@ -242,13 +245,27 @@ export default function AdminDashboardClient({ churches, users }: { churches: an
           <div style={{ position: "absolute", top: 10, left: 10, zIndex: 10, background: "rgba(15,23,42,0.8)", backdropFilter: "blur(10px)", padding: "6px 12px", borderRadius: "8px", border: "1px solid var(--border)", fontSize: "0.8rem", fontWeight: 600 }}>
             Mapa en vivo ({churches.length})
           </div>
-          <MapLibreComponent churches={churches} />
+          <MapLibreComponent 
+            churches={churches} 
+            onMapClick={(lat, lng) => {
+              if (isPickingLocation) {
+                setFormData(prev => ({ ...prev, latitude: lat, longitude: lng }));
+                setIsPickingLocation(false);
+              }
+            }}
+          />
+          {isPickingLocation && (
+            <div style={{ position: "absolute", top: 10, right: 10, zIndex: 10, background: "var(--primary-color)", padding: "10px 20px", borderRadius: "8px", color: "white", fontWeight: 700, boxShadow: "0 10px 25px rgba(0,0,0,0.5)" }}>
+              👆 Hacé clic en el mapa para ubicar la iglesia
+              <button onClick={() => setIsPickingLocation(false)} style={{ marginLeft: "10px", background: "white", color: "var(--primary-color)", border: "none", padding: "4px 8px", borderRadius: "4px", cursor: "pointer", fontWeight: 700 }}>Cancelar</button>
+            </div>
+          )}
         </div>
 
       </main>
 
       {/* Modal Form */}
-      {isModalOpen && (
+      {isModalOpen && !isPickingLocation && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100 }}>
           <div className="glass-panel" style={{ width: "90%", maxWidth: "500px", padding: "30px", maxHeight: "90vh", overflowY: "auto" }}>
             <h2 style={{ marginBottom: "20px", fontSize: "1.5rem" }}>{formData.id ? "Editar Iglesia" : "Nueva Iglesia"}</h2>
@@ -269,7 +286,7 @@ export default function AdminDashboardClient({ churches, users }: { churches: an
                   <option value="Otra">Otra</option>
                 </select>
               </div>
-              <div style={{ display: "flex", gap: "10px" }}>
+              <div style={{ display: "flex", gap: "10px", alignItems: "flex-end" }}>
                 <div className="form-group" style={{ flex: 1 }}>
                   <label className="form-label">Latitud</label>
                   <input type="number" step="any" className="form-input" value={formData.latitude || ""} onChange={e => setFormData({...formData, latitude: parseFloat(e.target.value) || null})} placeholder="-34.6037" />
@@ -278,6 +295,14 @@ export default function AdminDashboardClient({ churches, users }: { churches: an
                   <label className="form-label">Longitud</label>
                   <input type="number" step="any" className="form-input" value={formData.longitude || ""} onChange={e => setFormData({...formData, longitude: parseFloat(e.target.value) || null})} placeholder="-58.3816" />
                 </div>
+                <button 
+                  type="button" 
+                  className="btn-secondary" 
+                  style={{ padding: "10px", height: "42px", flexShrink: 0 }}
+                  onClick={() => setIsPickingLocation(true)}
+                >
+                  📍 Ubicar en Mapa
+                </button>
               </div>
               <div className="form-group">
                 <label className="form-label">Descripción</label>
@@ -386,6 +411,37 @@ export default function AdminDashboardClient({ churches, users }: { churches: an
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+      
+      {/* Delete Confirmation Modal */}
+      {churchToDelete && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)", backdropFilter: "blur(4px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 300, padding: "20px" }}>
+          <div className="glass-panel" style={{ width: "100%", maxWidth: "400px", padding: "30px", textAlign: "center" }}>
+            <div style={{ fontSize: "3rem", marginBottom: "15px" }}>⚠️</div>
+            <h2 style={{ color: "white", fontSize: "1.4rem", fontWeight: 800, marginBottom: "10px" }}>¿Eliminar Iglesia?</h2>
+            <p style={{ color: "var(--text-secondary)", fontSize: "0.95rem", marginBottom: "25px", lineHeight: 1.5 }}>
+              Estás a punto de eliminar <strong>{churchToDelete.name}</strong>. Esta acción no se puede deshacer. ¿Estás seguro?
+            </p>
+            <div style={{ display: "flex", gap: "12px" }}>
+              <button 
+                className="btn-secondary" 
+                style={{ flex: 1, padding: "12px" }}
+                onClick={() => setChurchToDelete(null)}
+                disabled={isPending}
+              >
+                Cancelar
+              </button>
+              <button 
+                className="btn-primary" 
+                style={{ flex: 1, padding: "12px", background: "#ef4444", borderColor: "#ef4444", color: "white" }}
+                onClick={confirmDeleteChurch}
+                disabled={isPending}
+              >
+                {isPending ? "Eliminando..." : "Sí, Eliminar"}
+              </button>
+            </div>
           </div>
         </div>
       )}
