@@ -53,37 +53,37 @@ function buildPopupHTML(name: string, type: string, address: string, lat: number
   
   let eventsHtml = '';
   if (events && events.length > 0) {
-    eventsHtml = '<div style="margin: 10px 0; padding: 10px; background: rgba(99,102,241,0.08); border-radius: 8px; border: 1px solid rgba(99,102,241,0.2);">' + 
-      '<h5 style="margin: 0 0 5px 0; font-size: 0.85rem; color: #818cf8;">📅 Próximos Eventos</h5>' +
+    eventsHtml = '<div style="margin: 10px 0; padding: 10px; background: rgba(255,255,255,0.05); border-radius: 8px; border: 1px solid rgba(255,255,255,0.1);">' + 
+      '<h5 style="margin: 0 0 5px 0; font-size: 0.85rem; color: #a5b4fc;">📅 Próximos Eventos</h5>' +
       events.slice(0, 3).map(e => 
-        `<div style="font-size: 0.75rem; color: #475569; margin-bottom: 4px;"><strong>${e.title}</strong> - ${new Date(e.eventDate).toLocaleDateString()}</div>`
+        `<div style="font-size: 0.75rem; color: #cbd5e1; margin-bottom: 4px;"><strong>${e.title}</strong> - ${new Date(e.eventDate).toLocaleDateString()}</div>`
       ).join('') + 
       '</div>';
   }
 
-  const detailBtn = isDB ? `<button onclick="window.openChurchDetail('${church?.id}')" style="margin-top: 8px; width: 100%; padding: 8px; background: rgba(99,102,241,0.1); color: #818cf8; border: 1px solid rgba(99,102,241,0.3); border-radius: 8px; font-size: 0.85rem; font-weight: 700; cursor: pointer;">👀 Ver Detalle de la Iglesia</button>` : '';
+  const detailBtn = isDB ? `<button onclick="window.openChurchDetail('${church?.id}')" style="margin-top: 8px; width: 100%; padding: 8px; background: rgba(99,102,241,0.2); color: #a5b4fc; border: 1px solid rgba(99,102,241,0.4); border-radius: 8px; font-size: 0.85rem; font-weight: 700; cursor: pointer; transition: background 0.2s;">👀 Ver Detalle de la Congregación</button>` : '';
 
   const importBtn = (isAdmin && !isDB) ? 
-    `<button onclick="window.importOsmChurchToDB('${name.replace(/'/g, "\\'")}'  , '${type}', '${address.replace(/'/g, "\\'")}'  , ${lat}, ${lng})" style="margin-top: 8px; width: 100%; padding: 6px; background: #10b981; color: white; border: none; border-radius: 8px; font-size: 0.8rem; font-weight: 600; cursor: pointer;">⬇️ Importar a DB (Admin)</button>` : '';
+    `<button onclick="window.importOsmChurchToDB('${name.replace(/'/g, "\\'")}'  , '${type}', '${address.replace(/'/g, "\\'")}'  , ${lat}, ${lng})" style="margin-top: 8px; width: 100%; padding: 6px; background: rgba(16,185,129,0.8); color: white; border: none; border-radius: 8px; font-size: 0.8rem; font-weight: 600; cursor: pointer;">⬇️ Importar a DB (Admin)</button>` : '';
 
   const imgHtml = church?.imageUrl ? 
-    `<img src="${church.imageUrl}" alt="${name}" style="width:48px;height:48px;object-fit:cover;border-radius:50%;flex-shrink:0;" />` : 
-    `<div style="width:48px;height:48px;border-radius:50%;background:${color};display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0;">${typeEmoji}</div>`;
+    `<img src="${church.imageUrl}" alt="${name}" style="width:48px;height:48px;object-fit:cover;border-radius:50%;flex-shrink:0;border:2px solid rgba(255,255,255,0.2);" />` : 
+    `<div style="width:48px;height:48px;border-radius:50%;background:${color};display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0;border:2px solid rgba(255,255,255,0.2);">${typeEmoji}</div>`;
 
   return `
-    <div style="font-family:system-ui,sans-serif;min-width:240px;padding:4px 0;">
+    <div style="font-family:system-ui,sans-serif;min-width:240px;padding:8px 12px 12px 12px;">
       <div style="display:flex;gap:12px;align-items:center;margin-bottom:12px;">
         ${imgHtml}
         <div>
           <span style="background:${color};color:white;border-radius:99px;padding:2px 8px;font-size:0.65rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;display:inline-block;margin-bottom:4px;">${typeEmoji} ${type}</span>
-          <h4 style="margin:0;color:#1e293b;font-size:0.95rem;font-weight:800;line-height:1.2;">${name}</h4>
+          <h4 style="margin:0;color:white;font-size:0.95rem;font-weight:800;line-height:1.2;">${name}</h4>
         </div>
       </div>
-      <p style="margin:0 0 10px;font-size:0.82rem;color:#64748b;">📍 ${address}</p>
+      <p style="margin:0 0 10px;font-size:0.82rem;color:#94a3b8;">📍 ${address}</p>
       ${eventsHtml}
       ${detailBtn}
       <a href="https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}" target="_blank" rel="noopener noreferrer"
-        style="display:flex;align-items:center;justify-content:center;gap:6px;background:#4f46e5;color:white;text-decoration:none;padding:8px;border-radius:10px;font-size:0.85rem;font-weight:600;width:100%;margin-top:6px;">
+        style="display:flex;align-items:center;justify-content:center;gap:6px;background:linear-gradient(135deg, rgba(79,70,229,0.8), rgba(168,85,247,0.8));color:white;text-decoration:none;padding:8px;border-radius:10px;font-size:0.85rem;font-weight:600;width:100%;margin-top:6px;border:1px solid rgba(255,255,255,0.1);">
         🧭 Cómo llegar
       </a>
       ${importBtn}

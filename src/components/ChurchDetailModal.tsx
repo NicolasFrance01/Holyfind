@@ -87,8 +87,8 @@ export default function ChurchDetailModal({ church, onClose, userId, followingCh
   const followerCount = church.followers?.length || 0;
 
   return (
-    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", backdropFilter: "blur(12px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 2000, padding: "16px" }}>
-      <div style={{ width: "100%", maxWidth: "640px", maxHeight: "94vh", background: "rgba(255, 255, 255, 0.03)", border: "1px solid rgba(255,255,255,0.15)", boxShadow: "0 25px 50px -12px rgba(0,0,0,0.5)", borderRadius: "20px", overflow: "hidden", display: "flex", flexDirection: "column", backdropFilter: "blur(24px)", WebkitBackdropFilter: "blur(24px)" }}>
+    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", backdropFilter: "blur(12px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 2000, padding: "16px" }}>
+      <div style={{ width: "100%", maxWidth: "640px", maxHeight: "94vh", background: "rgba(15, 23, 42, 0.8)", border: "1px solid rgba(255,255,255,0.15)", boxShadow: "0 25px 50px -12px rgba(0,0,0,0.5)", borderRadius: "20px", overflow: "hidden", display: "flex", flexDirection: "column", backdropFilter: "blur(24px)", WebkitBackdropFilter: "blur(24px)" }}>
         <div style={{ flex: 1, overflowY: "auto" }}>
           {/* Hero */}
           <div style={{ position: "relative" }}>

@@ -397,15 +397,15 @@ export default function MapsViewClient({ initialChurches }: { initialChurches: C
         <button 
           onClick={() => setShowEventsPanel(true)}
           style={{
-            background: "rgba(255, 255, 255, 0.1)", color: "white",
-            border: "1px solid rgba(255, 255, 255, 0.2)", borderRadius: "99px", padding: "12px 20px",
+            background: "rgba(15, 23, 42, 0.7)", color: "white",
+            border: "1px solid rgba(255, 255, 255, 0.15)", borderRadius: "99px", padding: "12px 20px",
             fontSize: "0.95rem", fontWeight: 700, cursor: "pointer",
-            boxShadow: "0 8px 32px rgba(0, 0, 0, 0.3)", backdropFilter: "blur(12px)",
+            boxShadow: "0 8px 32px rgba(0, 0, 0, 0.4)", backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)",
             display: "flex", alignItems: "center", gap: "8px",
             transition: "transform 0.2s, background 0.2s"
           }}
-          onMouseEnter={e => { e.currentTarget.style.transform = "scale(1.05)"; e.currentTarget.style.background = "rgba(255, 255, 255, 0.2)"; }}
-          onMouseLeave={e => { e.currentTarget.style.transform = "scale(1)"; e.currentTarget.style.background = "rgba(255, 255, 255, 0.1)"; }}
+          onMouseEnter={e => { e.currentTarget.style.transform = "scale(1.05)"; e.currentTarget.style.background = "rgba(15, 23, 42, 0.85)"; }}
+          onMouseLeave={e => { e.currentTarget.style.transform = "scale(1)"; e.currentTarget.style.background = "rgba(15, 23, 42, 0.7)"; }}
         >
           <span>📅</span> Ver Próximos Eventos
         </button>
@@ -413,15 +413,15 @@ export default function MapsViewClient({ initialChurches }: { initialChurches: C
         <button 
           onClick={() => { setShowAddModal(true); setAddSuccess(false); }}
           style={{
-            background: "linear-gradient(135deg, rgba(168, 85, 247, 0.2), rgba(99, 102, 241, 0.2))", color: "white",
-            border: "1px solid rgba(168, 85, 247, 0.4)", borderRadius: "99px", padding: "12px 20px",
+            background: "linear-gradient(135deg, rgba(99, 102, 241, 0.7), rgba(168, 85, 247, 0.7))", color: "white",
+            border: "1px solid rgba(255, 255, 255, 0.25)", borderRadius: "99px", padding: "12px 20px",
             fontSize: "0.95rem", fontWeight: 700, cursor: "pointer",
-            boxShadow: "0 8px 32px rgba(0, 0, 0, 0.3)", backdropFilter: "blur(12px)",
+            boxShadow: "0 8px 32px rgba(0, 0, 0, 0.4)", backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)",
             display: "flex", alignItems: "center", gap: "8px",
             transition: "transform 0.2s, background 0.2s"
           }}
-          onMouseEnter={e => { e.currentTarget.style.transform = "scale(1.05)"; e.currentTarget.style.background = "linear-gradient(135deg, rgba(168, 85, 247, 0.4), rgba(99, 102, 241, 0.4))"; }}
-          onMouseLeave={e => { e.currentTarget.style.transform = "scale(1)"; e.currentTarget.style.background = "linear-gradient(135deg, rgba(168, 85, 247, 0.2), rgba(99, 102, 241, 0.2))"; }}
+          onMouseEnter={e => { e.currentTarget.style.transform = "scale(1.05)"; e.currentTarget.style.background = "linear-gradient(135deg, rgba(99, 102, 241, 0.9), rgba(168, 85, 247, 0.9))"; }}
+          onMouseLeave={e => { e.currentTarget.style.transform = "scale(1)"; e.currentTarget.style.background = "linear-gradient(135deg, rgba(99, 102, 241, 0.7), rgba(168, 85, 247, 0.7))"; }}
         >
           <span>➕</span> ¿Falta tu congregación?
         </button>

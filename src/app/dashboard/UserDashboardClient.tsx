@@ -78,7 +78,7 @@ export default function UserDashboardClient({ user, followedChurches, savedEvent
   return (
     <div style={{ minHeight: "100vh", background: "var(--bg-gradient-start)", display: "flex", flexDirection: "column" }}>
       {/* Header */}
-      <header style={{ padding: "14px 24px", background: "rgba(15,23,42,0.95)", borderBottom: "1px solid var(--glass-border)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+      <header style={{ padding: "14px 24px", background: "rgba(10, 15, 30, 0.5)", backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)", borderBottom: "1px solid rgba(255, 255, 255, 0.1)", display: "flex", justifyContent: "space-between", alignItems: "center", zIndex: 10, position: "sticky", top: 0 }}>
         <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
           <Link href="/" style={{ textDecoration: "none" }}>
             <span className="text-gradient" style={{ fontFamily: "var(--font-heading)", fontWeight: 800, fontSize: "1.4rem" }}>Holyfind</span>
