@@ -180,6 +180,14 @@ out center tags;`;
           : [el.center?.lat, el.center?.lon];
         if (!coords[0] || !coords[1]) return;
 
+        // Skip if this OSM place is already in the DB (check proximity ~50m)
+        const isDuplicate = churches.some(dbChurch => {
+          if (!dbChurch.latitude || !dbChurch.longitude) return false;
+          return Math.abs(dbChurch.latitude - coords[0]) < 0.0005 && 
+                 Math.abs(dbChurch.longitude - coords[1]) < 0.0005;
+        });
+        if (isDuplicate) return;
+
         const tags = el.tags || {};
         const religion = (tags.religion || "").toLowerCase();
         const denom = (tags.denomination || "").toLowerCase();
