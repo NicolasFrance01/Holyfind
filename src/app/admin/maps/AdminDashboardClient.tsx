@@ -38,7 +38,7 @@ export default function AdminDashboardClient({ churches, users, normalUsers }: {
   const [churchToDelete, setChurchToDelete] = useState<any>(null);
   const [userToDelete, setUserToDelete] = useState<any>(null);
   const [userToEdit, setUserToEdit] = useState<any>(null);
-  const [userEditForm, setUserEditForm] = useState({ name: "", email: "", phone: "", recoveryEmail: "", password: "" });
+  const [userEditForm, setUserEditForm] = useState({ name: "", email: "", phone: "", dni: "", recoveryEmail: "", password: "" });
   const [formData, setFormData] = useState<ChurchFormData>(defaultForm);
   const [isCreateUserOpen, setIsCreateUserOpen] = useState(false);
   const [userCreateMsg, setUserCreateMsg] = useState<{ text: string; ok: boolean } | null>(null);

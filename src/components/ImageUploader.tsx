@@ -71,8 +71,9 @@ export default function ImageUploader({
       setPreview(previewUrl);
       setImageSrc(null); // Close modal
 
+      const fileObj = new File([croppedBlob], "image.jpg", { type: "image/jpeg" });
       const formData = new FormData();
-      formData.append("file", croppedBlob, "profile.jpg");
+      formData.append("file", fileObj);
       formData.append("folder", folder);
 
       const res = await fetch("/api/upload", { method: "POST", body: formData });
