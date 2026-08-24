@@ -8,7 +8,7 @@ import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 
 // Dynamic import for the map to avoid SSR issues
-const MapLibreComponent = dynamic(() => import("@/components/MapLibreComponent"), {
+const MapComponent = dynamic(() => import("@/components/MapComponent"), {
   ssr: false,
   loading: () => <div style={{ height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}>Cargando mapa...</div>
 });
@@ -354,8 +354,9 @@ export default function AdminDashboardClient({ churches, users, normalUsers }: {
           <div style={{ position: "absolute", top: 10, left: 10, zIndex: 10, background: "rgba(15,23,42,0.8)", backdropFilter: "blur(10px)", padding: "6px 12px", borderRadius: "8px", border: "1px solid var(--border)", fontSize: "0.8rem", fontWeight: 600 }}>
             Mapa en vivo ({churches.length})
           </div>
-          <MapLibreComponent 
+          <MapComponent 
             churches={churches} 
+            isAdmin={true}
             onMapClick={(lat, lng) => {
               if (isPickingLocation) {
                 setFormData(prev => ({ ...prev, latitude: lat, longitude: lng }));
