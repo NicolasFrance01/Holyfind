@@ -59,6 +59,10 @@ export default function MapsViewClient({ initialChurches }: { initialChurches: C
   const [userSaves, setUserSaves] = useState<string[]>([]);
   const [userFollows, setUserFollows] = useState<string[]>([]);
 
+  // Sponsored Event Modal (Floating)
+  const [spamEvent, setSpamEvent] = useState<any>(null);
+  const [showSpamModal, setShowSpamModal] = useState(false);
+
   // Fetch user data & public events on load
   useEffect(() => {
     async function loadInitial() {
@@ -71,6 +75,16 @@ export default function MapsViewClient({ initialChurches }: { initialChurches: C
         const lastSeenTime = lastSeen ? parseInt(lastSeen, 10) : 0;
         const hasUnread = events.some((ev: any) => new Date(ev.createdAt).getTime() > lastSeenTime);
         setHasNewEvents(hasUnread);
+
+        // Pick sponsored event
+        const now = new Date();
+        const validEvents = events.filter((ev: any) => new Date(ev.eventDate) >= now);
+        const popularEvents = validEvents.filter((ev: any) => (ev.likes?.length || 0) + (ev.saves?.length || 0) >= 3);
+        const pool = popularEvents.length > 0 ? popularEvents : validEvents;
+        if (pool.length > 0) {
+          setSpamEvent(pool[0]);
+          setShowSpamModal(true);
+        }
 
         if (session?.user) {
           const res = await fetch("/api/user-data");
@@ -522,6 +536,44 @@ export default function MapsViewClient({ initialChurches }: { initialChurches: C
               </>
             )}
           </div>
+        </div>
+      )}
+
+      {/* Floating Sponsored Event Modal */}
+      {showSpamModal && spamEvent && (
+        <div style={{
+          position: "fixed", inset: 0, zIndex: 2500,
+          background: "rgba(0,0,0,0.7)", backdropFilter: "blur(8px)",
+          display: "flex", alignItems: "center", justifyContent: "center", padding: "20px"
+        }}>
+          <div style={{
+            background: "rgba(8, 10, 22, 0.95)", border: "1px solid rgba(251,191,36,0.5)",
+            borderRadius: "24px", maxWidth: "480px", width: "100%",
+            boxShadow: "0 25px 60px rgba(0,0,0,0.8), 0 0 40px rgba(251,191,36,0.15)", position: "relative",
+            overflow: "hidden", animation: "slideIn 0.4s cubic-bezier(0.16, 1, 0.3, 1)"
+          }}>
+            <div style={{ padding: "14px 20px", background: "rgba(251,191,36,0.15)", borderBottom: "1px solid rgba(251,191,36,0.3)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <span style={{ fontSize: "0.8rem", fontWeight: 800, color: "#fbbf24", letterSpacing: "0.1em" }}>✨ EVENTO DESTACADO</span>
+              <button onClick={() => setShowSpamModal(false)} style={{ background: "none", border: "none", color: "white", fontSize: "1.5rem", cursor: "pointer", lineHeight: 1 }}>×</button>
+            </div>
+            <div style={{ padding: "20px" }}>
+              {spamEvent.imageUrl && <img src={spamEvent.imageUrl} alt={spamEvent.title} style={{ width: "100%", height: "200px", objectFit: "contain", background: "#0a0c16", borderRadius: "12px", marginBottom: "16px" }} />}
+              <h2 style={{ color: "white", fontSize: "1.4rem", fontWeight: 800, margin: "0 0 6px" }}>{spamEvent.title}</h2>
+              <p style={{ color: "var(--text-secondary)", fontSize: "0.95rem", margin: "0 0 12px" }}>⛪ {spamEvent.church?.name}</p>
+              <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "16px" }}>
+                <span style={{ fontSize: "1.5rem" }}>🗓️</span>
+                <div>
+                  <p style={{ color: "white", margin: 0, fontWeight: 600, fontSize: "0.9rem" }}>{new Date(spamEvent.eventDate).toLocaleDateString("es-AR", { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                  <p style={{ color: "var(--text-secondary)", margin: 0, fontSize: "0.85rem" }}>{new Date(spamEvent.eventDate).toLocaleTimeString("es-AR", { hour: '2-digit', minute: '2-digit' })} hs</p>
+                </div>
+              </div>
+              {spamEvent.description && <p style={{ color: "var(--text-secondary)", fontSize: "0.9rem", lineHeight: 1.6, marginBottom: "20px", display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{spamEvent.description}</p>}
+              <div style={{ display: "flex", gap: "12px" }}>
+                <button onClick={() => setShowSpamModal(false)} className="btn-primary" style={{ flex: 1, padding: "12px", fontSize: "0.95rem" }}>Cerrar y explorar</button>
+              </div>
+            </div>
+          </div>
+          <style>{`@keyframes slideIn { from { opacity: 0; transform: translateY(20px) scale(0.95); } to { opacity: 1; transform: translateY(0) scale(1); } }`}</style>
         </div>
       )}
       {/* Detail Modal */}

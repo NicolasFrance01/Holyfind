@@ -84,18 +84,25 @@ export default function EventsPanel({ events, userId, likedEventIds = [], savedE
   const regularEvents = filtered.filter(ev => !isNew(ev) && !isPopular(ev));
   const savedEvents = filtered.filter(isSaved);
 
-  // Sponsored event: pick one popular random or random overall
-  const pool = popularEvents.length > 0 ? popularEvents : filtered;
-  const spamEvent = pool.length > 0 && !dismissedSpam.has(pool[0]?.id) ? pool[0] : null;
-
   // Load Instagram embed script
   useEffect(() => {
     if (selectedEvent?.videoUrl && isInstagram(selectedEvent.videoUrl)) {
-      const script = document.createElement("script");
-      script.src = "//www.instagram.com/embed.js";
-      script.async = true;
-      document.body.appendChild(script);
-      return () => { document.body.removeChild(script); };
+      const processIg = () => {
+        if ((window as any).instgrm) {
+          (window as any).instgrm.Embeds.process();
+        }
+      };
+
+      if ((window as any).instgrm) {
+        // Need a small timeout for React to mount the blockquote
+        setTimeout(processIg, 100);
+      } else {
+        const script = document.createElement("script");
+        script.src = "//www.instagram.com/embed.js";
+        script.async = true;
+        script.onload = () => setTimeout(processIg, 100);
+        document.body.appendChild(script);
+      }
     }
   }, [selectedEvent]);
 
@@ -206,30 +213,6 @@ export default function EventsPanel({ events, userId, likedEventIds = [], savedE
       <div style={{ flex: 1, overflowY: "auto", padding: "8px" }}>
         {activeTab === "todos" && (
           <>
-            {/* Sponsored / Spam */}
-            {spamEvent && spamVisible && !dismissedSpam.has(spamEvent.id) && (
-              <div style={{
-                marginBottom: "12px", borderRadius: "14px", overflow: "hidden",
-                border: "1px solid rgba(251,191,36,0.4)",
-                background: "rgba(251,191,36,0.06)",
-                transition: "all 0.4s ease",
-                animation: "slideIn 0.35s ease"
-              }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "6px 12px", background: "rgba(251,191,36,0.12)", borderBottom: "1px solid rgba(251,191,36,0.2)" }}>
-                  <span style={{ fontSize: "0.68rem", fontWeight: 800, color: "#fbbf24", letterSpacing: "0.08em" }}>✨ PATROCINADO</span>
-                  <button onClick={dismissSpam} style={{ background: "none", border: "none", color: "var(--text-secondary)", cursor: "pointer", fontSize: "1rem", lineHeight: 1, padding: "0 2px" }}>×</button>
-                </div>
-                <div onClick={() => setSelectedEvent(spamEvent)} style={{ cursor: "pointer" }}>
-                  {spamEvent.imageUrl && <img src={spamEvent.imageUrl} alt={spamEvent.title} style={{ width: "100%", height: "100px", objectFit: "contain", background: "#0a0c16" }} />}
-                  <div style={{ padding: "10px 12px" }}>
-                    <h3 style={{ color: "white", fontSize: "0.9rem", fontWeight: 700, margin: "0 0 3px" }}>{spamEvent.title}</h3>
-                    <p style={{ color: "var(--text-secondary)", fontSize: "0.78rem", margin: 0 }}>⛪ {spamEvent.church?.name}</p>
-                    <p style={{ color: "var(--text-secondary)", fontSize: "0.75rem", margin: "4px 0 0" }}>🗓️ {new Date(spamEvent.eventDate).toLocaleString("es-AR", { dateStyle: "medium", timeStyle: "short" })}</p>
-                  </div>
-                </div>
-              </div>
-            )}
-
             {/* Popular */}
             {popularEvents.length > 0 && (
               <>

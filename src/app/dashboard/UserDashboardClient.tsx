@@ -230,13 +230,24 @@ export default function UserDashboardClient({ user, followedChurches, savedEvent
 
                   {/* Próximos Eventos */}
                   {selectedChurch.events?.length > 0 && (
-                    <div className="glass-panel" style={{ padding: "20px", marginBottom: "16px" }}>
-                      <p style={{ color: "var(--text-secondary)", fontSize: "0.75rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: "12px" }}>📅 Próximos Eventos</p>
-                      <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                    <div style={{ marginBottom: "16px" }}>
+                      <p style={{ color: "var(--text-secondary)", fontSize: "0.75rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", margin: "0 0 12px 4px" }}>📅 Próximos Eventos</p>
+                      <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
                         {selectedChurch.events.map((ev: any) => (
-                          <div key={ev.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px", background: "rgba(99,102,241,0.06)", borderRadius: "10px", border: "1px solid rgba(99,102,241,0.15)" }}>
-                            <span style={{ color: "white", fontSize: "0.88rem", fontWeight: 600 }}>📅 {ev.title}</span>
-                            <span style={{ color: "var(--text-secondary)", fontSize: "0.78rem" }}>{new Date(ev.eventDate).toLocaleDateString("es-AR")}</span>
+                          <div key={ev.id} className="glass-panel" style={{ padding: "16px", borderRadius: "14px" }}>
+                            {ev.imageUrl && <img src={ev.imageUrl} alt={ev.title} style={{ width: "100%", maxHeight: "160px", objectFit: "contain", background: "rgba(0,0,0,0.4)", borderRadius: "10px", marginBottom: "12px" }} />}
+                            <h3 style={{ color: "white", fontSize: "1.05rem", fontWeight: 700, margin: "0 0 4px" }}>{ev.title}</h3>
+                            <p style={{ color: "var(--text-secondary)", fontSize: "0.82rem", margin: "0 0 10px" }}>🗓️ {new Date(ev.eventDate).toLocaleString("es-AR", { dateStyle: "long", timeStyle: "short" })}</p>
+                            {ev.description && <p style={{ color: "var(--text-secondary)", fontSize: "0.9rem", lineHeight: 1.6, marginBottom: "10px" }}>{ev.description}</p>}
+                            {ev.notes && <p style={{ color: "#818cf8", fontSize: "0.85rem", padding: "8px 12px", background: "rgba(99,102,241,0.1)", borderRadius: "8px", margin: "0 0 10px" }}>📢 {ev.notes}</p>}
+                            {ev.media?.length > 0 && (
+                              <div style={{ display: "flex", gap: "8px", overflowX: "auto", marginBottom: "10px" }}>
+                                {ev.media.map((m: any, i: number) => <img key={i} src={m.url} alt="" style={{ height: "70px", width: "90px", objectFit: "contain", background: "rgba(0,0,0,0.3)", borderRadius: "8px", flexShrink: 0 }} />)}
+                              </div>
+                            )}
+                            {ev.videoUrl && (
+                              <a href={ev.videoUrl} target="_blank" rel="noopener" className="btn-secondary" style={{ display: "inline-block", padding: "6px 14px", fontSize: "0.8rem", textDecoration: "none" }}>🎥 Ver Video asociado</a>
+                            )}
                           </div>
                         ))}
                       </div>
@@ -245,12 +256,23 @@ export default function UserDashboardClient({ user, followedChurches, savedEvent
 
                   {/* Actividades */}
                   {selectedChurch.activities?.length > 0 && (
-                    <div className="glass-panel" style={{ padding: "20px" }}>
-                      <p style={{ color: "var(--text-secondary)", fontSize: "0.75rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: "12px" }}>🏃 Actividades</p>
-                      <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
-                        {selectedChurch.activities.map((act: any) => (
-                          <span key={act.id} style={{ padding: "5px 12px", borderRadius: "99px", fontSize: "0.8rem", background: "rgba(99,102,241,0.15)", color: "#818cf8", border: "1px solid rgba(99,102,241,0.2)" }}>🏃 {act.title}</span>
-                        ))}
+                    <div>
+                      <p style={{ color: "var(--text-secondary)", fontSize: "0.75rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", margin: "0 0 12px 4px" }}>🏃 Actividades Regulares</p>
+                      <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                        {selectedChurch.activities.filter((a: any) => a.isActive).map((act: any) => {
+                          const days = act.days ? JSON.parse(act.days) : [];
+                          const DAY_MAP: Record<string, string> = { MONDAY: "Lunes", TUESDAY: "Martes", WEDNESDAY: "Miércoles", THURSDAY: "Jueves", FRIDAY: "Viernes", SATURDAY: "Sábado", SUNDAY: "Domingo" };
+                          return (
+                            <div key={act.id} className="glass-panel" style={{ padding: "16px", borderRadius: "14px" }}>
+                              {act.imageUrl && <img src={act.imageUrl} alt={act.title} style={{ width: "100%", maxHeight: "160px", objectFit: "contain", background: "rgba(0,0,0,0.4)", borderRadius: "10px", marginBottom: "12px" }} />}
+                              <h3 style={{ color: "white", fontSize: "1.05rem", fontWeight: 700, margin: "0 0 4px" }}>{act.title}</h3>
+                              {days.length > 0 && <p style={{ color: "var(--text-secondary)", fontSize: "0.85rem", margin: "0 0 2px" }}>📅 {days.map((d: string) => DAY_MAP[d] || d).join(", ")}</p>}
+                              {(act.startTime || act.endTime) && <p style={{ color: "var(--text-secondary)", fontSize: "0.85rem", margin: "0 0 10px" }}>🕐 {act.startTime} - {act.endTime}</p>}
+                              {act.description && <p style={{ color: "var(--text-secondary)", fontSize: "0.9rem", lineHeight: 1.6, marginBottom: "10px" }}>{act.description}</p>}
+                              {act.notes && <p style={{ color: "#818cf8", fontSize: "0.85rem", padding: "8px 12px", background: "rgba(99,102,241,0.1)", borderRadius: "8px" }}>📢 {act.notes}</p>}
+                            </div>
+                          );
+                        })}
                       </div>
                     </div>
                   )}
