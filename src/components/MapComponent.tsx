@@ -49,7 +49,7 @@ type Props = {
 
 function buildPopupHTML(name: string, type: string, address: string, lat: number, lng: number, isDB: boolean = false, isAdmin: boolean = false, events: any[] = [], church?: Partial<Church>): string {
   const color = TYPE_COLORS[type] || "#94a3b8";
-  const emoji = church?.imageUrl ? `<img src="${church.imageUrl}" style="width:28px;height:28px;border-radius:6px;object-fit:cover;" />` : (TYPE_EMOJI[type] || "⛪");
+  const typeEmoji = TYPE_EMOJI[type] || "⛪";
   
   let eventsHtml = '';
   if (events && events.length > 0) {
@@ -61,32 +61,26 @@ function buildPopupHTML(name: string, type: string, address: string, lat: number
       '</div>';
   }
 
-  // Social links
-  const socials: string[] = [];
-  if (church?.instagram) socials.push(`<a href="${church.instagram}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:4px;padding:5px 10px;border-radius:8px;text-decoration:none;font-size:0.75rem;font-weight:700;background:linear-gradient(135deg,#f43f5e,#ec4899,#a855f7);color:white;">📸 Instagram</a>`);
-  if (church?.youtube) socials.push(`<a href="${church.youtube}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:4px;padding:5px 10px;border-radius:8px;text-decoration:none;font-size:0.75rem;font-weight:700;background:#ef4444;color:white;">▶️ YouTube</a>`);
-  if (church?.facebook) socials.push(`<a href="${church.facebook}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:4px;padding:5px 10px;border-radius:8px;text-decoration:none;font-size:0.75rem;font-weight:700;background:#3b82f6;color:white;">📘 Facebook</a>`);
-  if (church?.whatsapp) {
-    const waNum = church.whatsapp.replace(/[^0-9]/g, '');
-    socials.push(`<a href="https://wa.me/${waNum}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:4px;padding:5px 10px;border-radius:8px;text-decoration:none;font-size:0.75rem;font-weight:700;background:#22c55e;color:white;">💬 WhatsApp</a>`);
-  }
-  const socialsHtml = socials.length > 0 ? `<div style="display:flex;flex-wrap:wrap;gap:5px;margin:8px 0;">${socials.join('')}</div>` : '';
-
   const detailBtn = isDB ? `<button onclick="window.openChurchDetail('${church?.id}')" style="margin-top: 8px; width: 100%; padding: 8px; background: rgba(99,102,241,0.1); color: #818cf8; border: 1px solid rgba(99,102,241,0.3); border-radius: 8px; font-size: 0.85rem; font-weight: 700; cursor: pointer;">👀 Ver Detalle de la Iglesia</button>` : '';
 
   const importBtn = (isAdmin && !isDB) ? 
     `<button onclick="window.importOsmChurchToDB('${name.replace(/'/g, "\\'")}'  , '${type}', '${address.replace(/'/g, "\\'")}'  , ${lat}, ${lng})" style="margin-top: 8px; width: 100%; padding: 6px; background: #10b981; color: white; border: none; border-radius: 8px; font-size: 0.8rem; font-weight: 600; cursor: pointer;">⬇️ Importar a DB (Admin)</button>` : '';
 
-  const imgHtml = church?.imageUrl ? `<img src="${church.imageUrl}" alt="${name}" style="width:100%;height:80px;object-fit:cover;border-radius:10px;margin-bottom:8px;" />` : '';
+  const imgHtml = church?.imageUrl ? 
+    `<img src="${church.imageUrl}" alt="${name}" style="width:48px;height:48px;object-fit:cover;border-radius:50%;flex-shrink:0;" />` : 
+    `<div style="width:48px;height:48px;border-radius:50%;background:${color};display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0;">${typeEmoji}</div>`;
 
   return `
-    <div style="font-family:system-ui,sans-serif;min-width:220px;padding:4px 0;">
-      ${imgHtml}
-      <span style="background:${color};color:white;border-radius:99px;padding:2px 10px;font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;">${TYPE_EMOJI[type] || '⛪'} ${type}</span>
-      <h4 style="margin:8px 0 4px;color:#1e293b;font-size:0.98rem;font-weight:800;line-height:1.3;">${name}</h4>
-      <p style="margin:0 0 8px;font-size:0.82rem;color:#64748b;">📍 ${address}</p>
+    <div style="font-family:system-ui,sans-serif;min-width:240px;padding:4px 0;">
+      <div style="display:flex;gap:12px;align-items:center;margin-bottom:12px;">
+        ${imgHtml}
+        <div>
+          <span style="background:${color};color:white;border-radius:99px;padding:2px 8px;font-size:0.65rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;display:inline-block;margin-bottom:4px;">${typeEmoji} ${type}</span>
+          <h4 style="margin:0;color:#1e293b;font-size:0.95rem;font-weight:800;line-height:1.2;">${name}</h4>
+        </div>
+      </div>
+      <p style="margin:0 0 10px;font-size:0.82rem;color:#64748b;">📍 ${address}</p>
       ${eventsHtml}
-      ${socialsHtml}
       ${detailBtn}
       <a href="https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}" target="_blank" rel="noopener noreferrer"
         style="display:flex;align-items:center;justify-content:center;gap:6px;background:#4f46e5;color:white;text-decoration:none;padding:8px;border-radius:10px;font-size:0.85rem;font-weight:600;width:100%;margin-top:6px;">
@@ -97,12 +91,16 @@ function buildPopupHTML(name: string, type: string, address: string, lat: number
   `;
 }
 
-function makePinIcon(L: any, color: string, emoji: string) {
+function makePinIcon(L: any, color: string, emoji: string, imageUrl?: string | null) {
+  const content = imageUrl 
+    ? `<img src="${imageUrl}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;transform:rotate(45deg);" />`
+    : `<span style="transform:rotate(45deg);font-size:14px;line-height:1;">${emoji}</span>`;
+
   return L.divIcon({
     className: "",
-    html: `<div style="background:${color};width:32px;height:32px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);display:flex;align-items:center;justify-content:center;box-shadow:0 3px 10px rgba(0,0,0,0.35);border:2px solid rgba(255,255,255,0.85);"><span style="transform:rotate(45deg);font-size:14px;line-height:1;">${emoji}</span></div>`,
-    iconSize: [32, 32],
-    iconAnchor: [16, 32],
+    html: `<div style="background:${color};width:36px;height:36px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);display:flex;align-items:center;justify-content:center;box-shadow:0 3px 10px rgba(0,0,0,0.35);border:2px solid rgba(255,255,255,0.85);overflow:hidden;">${content}</div>`,
+    iconSize: [36, 36],
+    iconAnchor: [18, 36],
   });
 }
 
@@ -188,7 +186,7 @@ out center tags;`;
           ? `${tags["addr:street"]} ${tags["addr:housenumber"] || ""}`.trim()
           : "Ubicación de OpenStreetMap";
 
-        const marker = L.marker(coords, { icon: makePinIcon(L, color, emoji) })
+        const marker = L.marker(coords, { icon: makePinIcon(L, color, emoji, null) })
           .addTo(map)
           .bindPopup(buildPopupHTML(name, type, address, coords[0], coords[1], false, isAdmin));
         osmMarkersRef.current.push(marker);
@@ -269,7 +267,7 @@ out center tags;`;
       const type = c.type || "Cristiana";
       const color = TYPE_COLORS[type] || "#818cf8";
       const emoji = TYPE_EMOJI[type] || "⛪";
-      L.marker([c.latitude, c.longitude], { icon: makePinIcon(L, color, emoji) })
+      L.marker([c.latitude, c.longitude], { icon: makePinIcon(L, color, emoji, c.imageUrl) })
         .addTo(map)
         .bindPopup(buildPopupHTML(c.name, type, c.address, c.latitude, c.longitude, true, isAdmin, c.events || [], c));
     });
