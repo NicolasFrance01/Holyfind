@@ -5,10 +5,10 @@ import nodemailer from "nodemailer";
 
 export async function POST(req: Request) {
   try {
-    const { name, email, password, phone, recoveryEmail } = await req.json();
+    const { name, email, password, dni, phone, recoveryEmail } = await req.json();
 
-    if (!name || !email || !password) {
-      return NextResponse.json({ error: "Faltan campos obligatorios" }, { status: 400 });
+    if (!name || !email || !password || !dni) {
+      return NextResponse.json({ error: "Faltan datos obligatorios (nombre, email, dni, contraseña)" }, { status: 400 });
     }
 
     // Check if user already exists
@@ -24,6 +24,7 @@ export async function POST(req: Request) {
         name,
         email,
         password: hashedPassword,
+        dni,
         phone: phone || null,
         recoveryEmail: recoveryEmail || null,
         role: "USER",

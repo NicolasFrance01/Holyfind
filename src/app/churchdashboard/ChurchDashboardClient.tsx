@@ -127,7 +127,9 @@ export default function ChurchDashboardClient({ churches, userId, userEmail }: {
           <span style={{ color: "var(--text-secondary)", fontSize: "0.8rem", padding: "3px 10px", background: "rgba(99,102,241,0.15)", borderRadius: "20px", border: "1px solid rgba(99,102,241,0.3)" }}>Panel de Iglesia</span>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-          <span style={{ color: "var(--text-secondary)", fontSize: "0.8rem" }}>{userEmail}</span>
+          <Link href="/maps" className="btn-secondary" style={{ padding: "6px 14px", fontSize: "0.85rem", textDecoration: "none" }}>🗺️ Ver Mapa</Link>
+          <Link href="/dashboard" className="btn-secondary" style={{ padding: "6px 14px", fontSize: "0.85rem", textDecoration: "none" }}>👤 Mi Perfil</Link>
+          <span style={{ color: "var(--text-secondary)", fontSize: "0.8rem", marginLeft: "10px" }}>{userEmail}</span>
           <button onClick={() => signOut({ callbackUrl: "/" })} className="btn-secondary" style={{ padding: "6px 14px", fontSize: "0.85rem" }}>Salir</button>
         </div>
       </header>

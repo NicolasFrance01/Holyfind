@@ -19,6 +19,7 @@ function LoginForm() {
   const searchParams = useSearchParams();
   const [isRegistering, setIsRegistering] = useState(false);
   const [name, setName] = useState("");
+  const [dni, setDni] = useState("");
   const [phone, setPhone] = useState("");
   const [recoveryEmail, setRecoveryEmail] = useState("");
   const [email, setEmail] = useState("");
@@ -46,7 +47,7 @@ function LoginForm() {
         const res = await fetch("/api/auth/register", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ name, email, password, phone, recoveryEmail })
+          body: JSON.stringify({ name, email: email.toLowerCase(), password, dni, phone, recoveryEmail })
         });
         const data = await res.json();
         
@@ -183,6 +184,20 @@ function LoginForm() {
               autoComplete="email"
             />
           </div>
+
+          {isRegistering && (
+            <div className="form-group" style={{ marginTop: "12px" }}>
+              <label className="form-label">DNI</label>
+              <input
+                type="text"
+                required
+                className="form-input"
+                value={dni}
+                onChange={(e) => setDni(e.target.value)}
+                placeholder="Sin puntos ni espacios"
+              />
+            </div>
+          )}
 
           <div className="form-group" style={{ marginTop: "12px" }}>
             <label className="form-label">Contraseña</label>

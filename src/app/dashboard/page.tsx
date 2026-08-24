@@ -21,7 +21,7 @@ export default async function UserDashboardPage() {
       id: true, email: true, name: true, role: true, isActive: true,
       profileImage: true, phone: true, phoneVerified: true,
       birthDate: true, maritalStatus: true, recoveryEmail: true,
-      createdAt: true,
+      createdAt: true, dni: true,
     }
   });
 

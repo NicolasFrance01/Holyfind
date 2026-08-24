@@ -599,6 +599,10 @@ export default function AdminDashboardClient({ churches, users, normalUsers }: {
                 <input required type="email" className="form-input" value={userEditForm.email} onChange={e => setUserEditForm({...userEditForm, email: e.target.value.toLowerCase()})} />
               </div>
               <div className="form-group">
+                <label className="form-label">DNI</label>
+                <input className="form-input" value={userEditForm.dni || ""} onChange={e => setUserEditForm({...userEditForm, dni: e.target.value})} />
+              </div>
+              <div className="form-group">
                 <label className="form-label">Teléfono</label>
                 <input className="form-input" value={userEditForm.phone} onChange={e => setUserEditForm({...userEditForm, phone: e.target.value})} />
               </div>
