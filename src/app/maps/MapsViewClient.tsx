@@ -392,7 +392,7 @@ export default function MapsViewClient({ initialChurches }: { initialChurches: C
       </div>
 
       {/* Floating Buttons: Add Church & Events Panel */}
-      <div style={{ position: "absolute", bottom: "30px", right: "20px", zIndex: 15, display: "flex", flexDirection: "column", gap: "12px" }}>
+      <div style={{ position: "absolute", bottom: "30px", right: "20px", zIndex: 1000, display: "flex", flexDirection: "column", gap: "12px" }}>
         <button 
           onClick={() => setShowEventsPanel(true)}
           style={{

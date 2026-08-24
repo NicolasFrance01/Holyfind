@@ -92,27 +92,28 @@ export default function ChurchDetailModal({ church, onClose, userId, followingCh
         <div style={{ flex: 1, overflowY: "auto" }}>
           {/* Hero */}
           <div style={{ position: "relative" }}>
-          {church.imageUrl ? (
-            <img src={church.imageUrl} alt={church.name} style={{ width: "100%", height: "160px", objectFit: "cover", borderRadius: "20px 20px 0 0" }} />
-          ) : (
-            <div style={{ width: "100%", height: "100px", background: "linear-gradient(135deg, rgba(99,102,241,0.3), rgba(168,85,247,0.3))", borderRadius: "20px 20px 0 0", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "3rem" }}>⛪</div>
-          )}
-          <button onClick={onClose} style={{ position: "absolute", top: "12px", right: "12px", background: "rgba(0,0,0,0.6)", border: "none", color: "white", borderRadius: "50%", width: "32px", height: "32px", cursor: "pointer", fontSize: "1.1rem" }}>×</button>
-        </div>
-
-        <div style={{ padding: "20px 24px" }}>
-          {/* Header */}
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "12px", marginBottom: "14px" }}>
-            <div>
-              <h2 style={{ color: "white", fontSize: "1.4rem", fontWeight: 800, margin: "0 0 4px" }}>{church.name}</h2>
-              <p style={{ color: "var(--text-secondary)", fontSize: "0.82rem", margin: "0 0 4px" }}>📍 {church.address}</p>
-              {church.type && <span style={{ fontSize: "0.72rem", fontWeight: 700, padding: "2px 10px", borderRadius: "99px", background: "rgba(99,102,241,0.2)", color: "#818cf8" }}>{church.type}</span>}
-            </div>
-            <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "6px" }}>
-              {avgRating && <div style={{ color: "#f59e0b", fontSize: "0.85rem", fontWeight: 700 }}>{"⭐".repeat(Math.round(avgRating))} {avgRating}</div>}
-              <div style={{ color: "var(--text-secondary)", fontSize: "0.75rem" }}>🔔 {followerCount} seguidores</div>
-            </div>
+            <div style={{ width: "100%", height: "100px", background: "linear-gradient(135deg, rgba(99,102,241,0.2), rgba(168,85,247,0.2))", borderRadius: "20px 20px 0 0" }}></div>
+            {church.imageUrl ? (
+              <img src={church.imageUrl} alt={church.name} style={{ width: "84px", height: "84px", objectFit: "cover", borderRadius: "50%", position: "absolute", bottom: "-36px", left: "24px", border: "4px solid #1a1f2c", background: "#1a1f2c" }} />
+            ) : (
+              <div style={{ width: "84px", height: "84px", borderRadius: "50%", position: "absolute", bottom: "-36px", left: "24px", border: "4px solid #1a1f2c", background: "linear-gradient(135deg, #4f46e5, #a855f7)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "2rem" }}>⛪</div>
+            )}
+            <button onClick={onClose} style={{ position: "absolute", top: "12px", right: "12px", background: "rgba(0,0,0,0.6)", border: "none", color: "white", borderRadius: "50%", width: "32px", height: "32px", cursor: "pointer", fontSize: "1.1rem", display: "flex", alignItems: "center", justifyContent: "center" }}>×</button>
           </div>
+
+          <div style={{ padding: "46px 24px 20px 24px" }}>
+            {/* Header */}
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "12px", marginBottom: "14px" }}>
+              <div>
+                <h2 style={{ color: "white", fontSize: "1.4rem", fontWeight: 800, margin: "0 0 4px" }}>{church.name}</h2>
+                <p style={{ color: "var(--text-secondary)", fontSize: "0.82rem", margin: "0 0 4px" }}>📍 {church.address}</p>
+                {church.type && <span style={{ fontSize: "0.72rem", fontWeight: 700, padding: "2px 10px", borderRadius: "99px", background: "rgba(99,102,241,0.2)", color: "#818cf8" }}>{church.type}</span>}
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "6px" }}>
+                {avgRating && <div style={{ color: "#f59e0b", fontSize: "0.85rem", fontWeight: 700 }}>{"⭐".repeat(Math.round(avgRating))} {avgRating}</div>}
+                <div style={{ color: "var(--text-secondary)", fontSize: "0.75rem" }}>🔔 {followerCount} seguidores</div>
+              </div>
+            </div>
 
           {/* Follow + Directions */}
           <div style={{ display: "flex", gap: "8px", marginBottom: "18px" }}>
