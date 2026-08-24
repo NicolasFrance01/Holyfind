@@ -88,10 +88,10 @@ export default function ChurchDetailModal({ church, onClose, userId, followingCh
 
   return (
     <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.85)", backdropFilter: "blur(8px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 2000, padding: "16px" }}>
-      <div style={{ width: "100%", maxWidth: "640px", maxHeight: "94vh", overflowY: "auto", background: "var(--card-bg)", border: "1px solid var(--glass-border)", borderRadius: "20px" }}>
-
-        {/* Hero */}
-        <div style={{ position: "relative" }}>
+      <div style={{ width: "100%", maxWidth: "640px", maxHeight: "94vh", background: "var(--card-bg)", border: "1px solid var(--glass-border)", borderRadius: "20px", overflow: "hidden", display: "flex", flexDirection: "column" }}>
+        <div style={{ flex: 1, overflowY: "auto" }}>
+          {/* Hero */}
+          <div style={{ position: "relative" }}>
           {church.imageUrl ? (
             <img src={church.imageUrl} alt={church.name} style={{ width: "100%", height: "160px", objectFit: "cover", borderRadius: "20px 20px 0 0" }} />
           ) : (
@@ -262,6 +262,7 @@ export default function ChurchDetailModal({ church, onClose, userId, followingCh
               </div>
             </div>
           )}
+        </div>
         </div>
       </div>
     </div>
