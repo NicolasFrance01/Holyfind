@@ -79,6 +79,7 @@ export default function AdminDashboardClient({ churches, users, normalUsers }: {
       name: u.name || "",
       email: u.email || "",
       phone: u.phone || "",
+      dni: u.dni || "",
       recoveryEmail: u.recoveryEmail || "",
       password: "" // password only filled if changing
     });
