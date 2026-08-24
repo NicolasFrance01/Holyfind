@@ -17,12 +17,12 @@ type Church = {
   description: string | null;
   type: string | null;
   imageUrl: string | null;
-  phone?: string | null;
-  website?: string | null;
-  instagram?: string | null;
-  youtube?: string | null;
-  facebook?: string | null;
-  whatsapp?: string | null;
+  phone: string | null;
+  website: string | null;
+  instagram: string | null;
+  youtube: string | null;
+  facebook: string | null;
+  whatsapp: string | null;
   events?: any[];
 };
 
