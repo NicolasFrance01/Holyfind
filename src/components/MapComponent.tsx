@@ -71,7 +71,7 @@ function buildPopupHTML(name: string, type: string, address: string, lat: number
     `<div style="width:48px;height:48px;border-radius:50%;background:${color};display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0;border:2px solid rgba(255,255,255,0.2);">${typeEmoji}</div>`;
 
   return `
-    <div style="font-family:system-ui,sans-serif;min-width:240px;padding:8px 12px 12px 12px;">
+    <div style="font-family:system-ui,sans-serif;min-width:240px;padding:12px;background:rgba(15,23,42,0.85);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,0.25);border-radius:18px;box-shadow:0 15px 40px rgba(0,0,0,0.6);color:white;">
       <div style="display:flex;gap:12px;align-items:center;margin-bottom:12px;">
         ${imgHtml}
         <div>

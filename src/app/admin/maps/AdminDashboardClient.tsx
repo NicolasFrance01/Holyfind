@@ -7,7 +7,11 @@ import { saveChurch } from "@/app/admin/actions";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 
-// Map removed from admin dashboard
+// Dynamic import for the map to avoid SSR issues
+const MapLibreComponent = dynamic(() => import("@/components/MapLibreComponent"), {
+  ssr: false,
+  loading: () => <div style={{ height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}>Cargando mapa...</div>
+});
 
 type ChurchFormData = {
   id?: string;
@@ -345,7 +349,27 @@ export default function AdminDashboardClient({ churches, users, normalUsers }: {
           )}
         </div>
 
-
+        {/* Right Side: Live Map Preview */}
+        <div style={{ width: "40%", borderLeft: "1px solid var(--border-strong)", position: "relative" }}>
+          <div style={{ position: "absolute", top: 10, left: 10, zIndex: 10, background: "rgba(15,23,42,0.8)", backdropFilter: "blur(10px)", padding: "6px 12px", borderRadius: "8px", border: "1px solid var(--border)", fontSize: "0.8rem", fontWeight: 600 }}>
+            Mapa en vivo ({churches.length})
+          </div>
+          <MapLibreComponent 
+            churches={churches} 
+            onMapClick={(lat, lng) => {
+              if (isPickingLocation) {
+                setFormData(prev => ({ ...prev, latitude: lat, longitude: lng }));
+                setIsPickingLocation(false);
+              }
+            }}
+          />
+          {isPickingLocation && (
+            <div style={{ position: "absolute", top: 10, right: 10, zIndex: 10, background: "var(--primary-color)", padding: "10px 20px", borderRadius: "8px", color: "white", fontWeight: 700, boxShadow: "0 10px 25px rgba(0,0,0,0.5)" }}>
+              👆 Hacé clic en el mapa para ubicar la iglesia
+              <button onClick={() => setIsPickingLocation(false)} style={{ marginLeft: "10px", background: "white", color: "var(--primary-color)", border: "none", padding: "4px 8px", borderRadius: "4px", cursor: "pointer", fontWeight: 700 }}>Cancelar</button>
+            </div>
+          )}
+        </div>
 
       </main>
 
@@ -380,7 +404,14 @@ export default function AdminDashboardClient({ churches, users, normalUsers }: {
                   <label className="form-label">Longitud</label>
                   <input type="number" step="any" className="form-input" value={formData.longitude || ""} onChange={e => setFormData({...formData, longitude: parseFloat(e.target.value) || null})} placeholder="-58.3816" />
                 </div>
-
+                <button 
+                  type="button" 
+                  className="btn-secondary" 
+                  style={{ padding: "10px", height: "42px", flexShrink: 0 }}
+                  onClick={() => setIsPickingLocation(true)}
+                >
+                  📍 Ubicar en Mapa
+                </button>
               </div>
               <div className="form-group">
                 <label className="form-label">Descripción</label>
