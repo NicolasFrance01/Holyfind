@@ -52,6 +52,8 @@ function LoginForm() {
 
       if (role === "SUPERADMIN") {
         router.push("/admin/maps");
+      } else if (role === "CLIENT") {
+        router.push("/churchdashboard");
       } else {
         router.push("/dashboard");
       }

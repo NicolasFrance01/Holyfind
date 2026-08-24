@@ -30,6 +30,12 @@ type Church = {
   description: string | null;
   type: string | null;
   imageUrl: string | null;
+  phone: string | null;
+  website: string | null;
+  instagram: string | null;
+  youtube: string | null;
+  facebook: string | null;
+  whatsapp: string | null;
   events?: any[];
 };
 
@@ -41,30 +47,46 @@ type Props = {
   isAdmin?: boolean;
 };
 
-function buildPopupHTML(name: string, type: string, address: string, lat: number, lng: number, isDB: boolean = false, isAdmin: boolean = false, events: any[] = []): string {
+function buildPopupHTML(name: string, type: string, address: string, lat: number, lng: number, isDB: boolean = false, isAdmin: boolean = false, events: any[] = [], church?: Partial<Church>): string {
   const color = TYPE_COLORS[type] || "#94a3b8";
-  const emoji = TYPE_EMOJI[type] || "⛪";
+  const emoji = church?.imageUrl ? `<img src="${church.imageUrl}" style="width:28px;height:28px;border-radius:6px;object-fit:cover;" />` : (TYPE_EMOJI[type] || "⛪");
+  
   let eventsHtml = '';
   if (events && events.length > 0) {
-    eventsHtml = '<div style="margin: 10px 0; padding: 10px; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0;">' + 
-      '<h5 style="margin: 0 0 5px 0; font-size: 0.85rem; color: #334155;">📅 Próximos Eventos</h5>' +
+    eventsHtml = '<div style="margin: 10px 0; padding: 10px; background: rgba(99,102,241,0.08); border-radius: 8px; border: 1px solid rgba(99,102,241,0.2);">' + 
+      '<h5 style="margin: 0 0 5px 0; font-size: 0.85rem; color: #818cf8;">📅 Próximos Eventos</h5>' +
       events.slice(0, 3).map(e => 
         `<div style="font-size: 0.75rem; color: #475569; margin-bottom: 4px;"><strong>${e.title}</strong> - ${new Date(e.eventDate).toLocaleDateString()}</div>`
       ).join('') + 
       '</div>';
   }
 
+  // Social links
+  const socials: string[] = [];
+  if (church?.instagram) socials.push(`<a href="${church.instagram}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:4px;padding:5px 10px;border-radius:8px;text-decoration:none;font-size:0.75rem;font-weight:700;background:linear-gradient(135deg,#f43f5e,#ec4899,#a855f7);color:white;">📸 Instagram</a>`);
+  if (church?.youtube) socials.push(`<a href="${church.youtube}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:4px;padding:5px 10px;border-radius:8px;text-decoration:none;font-size:0.75rem;font-weight:700;background:#ef4444;color:white;">▶️ YouTube</a>`);
+  if (church?.facebook) socials.push(`<a href="${church.facebook}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:4px;padding:5px 10px;border-radius:8px;text-decoration:none;font-size:0.75rem;font-weight:700;background:#3b82f6;color:white;">📘 Facebook</a>`);
+  if (church?.whatsapp) {
+    const waNum = church.whatsapp.replace(/[^0-9]/g, '');
+    socials.push(`<a href="https://wa.me/${waNum}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:4px;padding:5px 10px;border-radius:8px;text-decoration:none;font-size:0.75rem;font-weight:700;background:#22c55e;color:white;">💬 WhatsApp</a>`);
+  }
+  const socialsHtml = socials.length > 0 ? `<div style="display:flex;flex-wrap:wrap;gap:5px;margin:8px 0;">${socials.join('')}</div>` : '';
+
   const importBtn = (isAdmin && !isDB) ? 
-    `<button onclick="window.importOsmChurchToDB('${name.replace(/'/g, "\\'")}', '${type}', '${address.replace(/'/g, "\\'")}', ${lat}, ${lng})" style="margin-top: 8px; width: 100%; padding: 6px; background: #10b981; color: white; border: none; border-radius: 8px; font-size: 0.8rem; font-weight: 600; cursor: pointer;">⬇️ Importar a DB (Admin)</button>` : '';
+    `<button onclick="window.importOsmChurchToDB('${name.replace(/'/g, "\\'")}'  , '${type}', '${address.replace(/'/g, "\\'")}'  , ${lat}, ${lng})" style="margin-top: 8px; width: 100%; padding: 6px; background: #10b981; color: white; border: none; border-radius: 8px; font-size: 0.8rem; font-weight: 600; cursor: pointer;">⬇️ Importar a DB (Admin)</button>` : '';
+
+  const imgHtml = church?.imageUrl ? `<img src="${church.imageUrl}" alt="${name}" style="width:100%;height:80px;object-fit:cover;border-radius:10px;margin-bottom:8px;" />` : '';
 
   return `
-    <div style="font-family:system-ui,sans-serif;min-width:210px;padding:4px 0;">
-      <span style="background:${color};color:white;border-radius:99px;padding:2px 10px;font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;">${emoji} ${type}</span>
+    <div style="font-family:system-ui,sans-serif;min-width:220px;padding:4px 0;">
+      ${imgHtml}
+      <span style="background:${color};color:white;border-radius:99px;padding:2px 10px;font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;">${TYPE_EMOJI[type] || '⛪'} ${type}</span>
       <h4 style="margin:8px 0 4px;color:#1e293b;font-size:0.98rem;font-weight:800;line-height:1.3;">${name}</h4>
-      <p style="margin:0 0 10px;font-size:0.82rem;color:#64748b;">📍 ${address}</p>
+      <p style="margin:0 0 8px;font-size:0.82rem;color:#64748b;">📍 ${address}</p>
       ${eventsHtml}
+      ${socialsHtml}
       <a href="https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}" target="_blank" rel="noopener noreferrer"
-        style="display:flex;align-items:center;justify-content:center;gap:6px;background:#4f46e5;color:white;text-decoration:none;padding:8px;border-radius:10px;font-size:0.85rem;font-weight:600;width:100%;">
+        style="display:flex;align-items:center;justify-content:center;gap:6px;background:#4f46e5;color:white;text-decoration:none;padding:8px;border-radius:10px;font-size:0.85rem;font-weight:600;width:100%;margin-top:6px;">
         🧭 Cómo llegar
       </a>
       ${importBtn}
@@ -240,7 +262,7 @@ out center tags;`;
       const emoji = TYPE_EMOJI[type] || "⛪";
       L.marker([c.latitude, c.longitude], { icon: makePinIcon(L, color, emoji) })
         .addTo(map)
-        .bindPopup(buildPopupHTML(c.name, type, c.address, c.latitude, c.longitude, true, isAdmin, c.events));
+        .bindPopup(buildPopupHTML(c.name, type, c.address, c.latitude, c.longitude, true, isAdmin, c.events || [], c));
     });
 
     // Eventos de movimiento -> Mostrar botón de "Buscar en esta zona"

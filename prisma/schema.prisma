@@ -6,9 +6,12 @@ datasource db {
   provider = "postgresql"
 }
 
+// ─── Enums ──────────────────────────────────────────────────────────────────
+
 enum Role {
   SUPERADMIN
-  CLIENT
+  CLIENT       // Dueño/gestor de iglesia (asignado por admin)
+  USER         // Usuario común (se registra con Google)
 }
 
 enum EventType {
@@ -21,20 +24,52 @@ enum EventType {
   OTRO
 }
 
+enum MaritalStatus {
+  SOLTERO
+  CASADO
+  DIVORCIADO
+  VIUDO
+  OTRO
+}
+
+// ─── User ────────────────────────────────────────────────────────────────────
+
 model User {
-  id             String   @id @default(uuid())
-  email          String   @unique
+  id             String        @id @default(uuid())
+  email          String        @unique
   password       String
   name           String?
   dni            String?
-  role           Role     @default(CLIENT)
-  isActive       Boolean  @default(true)
-  emailConfirmed Boolean  @default(false)
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  role           Role          @default(USER)
+  isActive       Boolean       @default(true)
+  emailConfirmed Boolean       @default(false)
 
-  churches  ChurchManager[]
+  // Extended profile (USER role)
+  googleId       String?       @unique
+  profileImage   String?
+  phone          String?
+  phoneVerified  Boolean       @default(false)
+  birthDate      DateTime?
+  maritalStatus  MaritalStatus?
+  recoveryEmail  String?
+
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  // Church management
+  managedChurches    ChurchManager[]
+  authorizedChurches ChurchAuthorized[]
+
+  // Social
+  followedChurches ChurchFollow[]
+  savedEvents      EventSave[]
+  likedEvents      EventLike[]
+  savedActivities  ActivitySave[]
+  likedActivities  ActivityLike[]
+  comments         Comment[]
 }
+
+// ─── Church ──────────────────────────────────────────────────────────────────
 
 model Church {
   id          String   @id @default(uuid())
@@ -47,11 +82,20 @@ model Church {
   imageUrl    String?
   phone       String?
   website     String?
+  instagram   String?
+  youtube     String?
+  facebook    String?
+  whatsapp    String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   managers    ChurchManager[]
+  authorized  ChurchAuthorized[]
   events      Event[]
+  activities  Activity[]
+  followers   ChurchFollow[]
+  comments    Comment[]
+  stats       ChurchStat[]
 }
 
 model ChurchManager {
@@ -64,6 +108,41 @@ model ChurchManager {
   @@unique([userId, churchId])
 }
 
+model ChurchAuthorized {
+  id            String  @id @default(uuid())
+  userId        String
+  churchId      String
+  canProfile    Boolean @default(false)
+  canEvents     Boolean @default(false)
+  canActivities Boolean @default(false)
+  canComments   Boolean @default(false)
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  church Church @relation(fields: [churchId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, churchId])
+}
+
+model ChurchFollow {
+  id       String @id @default(uuid())
+  userId   String
+  churchId String
+  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  church   Church @relation(fields: [churchId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, churchId])
+}
+
+model ChurchStat {
+  id        String   @id @default(uuid())
+  churchId  String
+  type      String   // "map_click" | "profile_view"
+  createdAt DateTime @default(now())
+  church    Church   @relation(fields: [churchId], references: [id], onDelete: Cascade)
+}
+
+// ─── Event ───────────────────────────────────────────────────────────────────
+
 model Event {
   id          String    @id @default(uuid())
   title       String
@@ -71,10 +150,120 @@ model Event {
   eventDate   DateTime
   type        EventType @default(OTRO)
   imageUrl    String?
+  videoUrl    String?
+  notes       String?
   isPublic    Boolean   @default(true)
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
-  churchId    String
-  church      Church    @relation(fields: [churchId], references: [id], onDelete: Cascade)
+  churchId String
+  church   Church @relation(fields: [churchId], references: [id], onDelete: Cascade)
+
+  media EventMedia[]
+  saves EventSave[]
+  likes EventLike[]
+}
+
+model EventMedia {
+  id      String @id @default(uuid())
+  eventId String
+  url     String
+  type    String // "image" | "video_url"
+  event   Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
+}
+
+model EventSave {
+  id      String @id @default(uuid())
+  userId  String
+  eventId String
+  user    User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  event   Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, eventId])
+}
+
+model EventLike {
+  id      String @id @default(uuid())
+  userId  String
+  eventId String
+  user    User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  event   Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, eventId])
+}
+
+// ─── Activity ────────────────────────────────────────────────────────────────
+
+model Activity {
+  id          String   @id @default(uuid())
+  title       String
+  description String?
+  days        String   // JSON string: ["MONDAY","WEDNESDAY"]
+  startTime   String?
+  endTime     String?
+  imageUrl    String?
+  videoUrl    String?
+  notes       String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  churchId String
+  church   Church @relation(fields: [churchId], references: [id], onDelete: Cascade)
+
+  media ActivityMedia[]
+  saves ActivitySave[]
+  likes ActivityLike[]
+}
+
+model ActivityMedia {
+  id         String   @id @default(uuid())
+  activityId String
+  url        String
+  type       String   // "image" | "video_url"
+  activity   Activity @relation(fields: [activityId], references: [id], onDelete: Cascade)
+}
+
+model ActivitySave {
+  id         String   @id @default(uuid())
+  userId     String
+  activityId String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  activity   Activity @relation(fields: [activityId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, activityId])
+}
+
+model ActivityLike {
+  id         String   @id @default(uuid())
+  userId     String
+  activityId String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  activity   Activity @relation(fields: [activityId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, activityId])
+}
+
+// ─── Comment ─────────────────────────────────────────────────────────────────
+
+model Comment {
+  id        String   @id @default(uuid())
+  userId    String
+  churchId  String
+  rating    Int      @default(5)
+  text      String
+  isVisible Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  church  Church  @relation(fields: [churchId], references: [id], onDelete: Cascade)
+  media   CommentMedia[]
+}
+
+model CommentMedia {
+  id        String  @id @default(uuid())
+  commentId String
+  url       String
+  type      String  // "image" | "video_url"
+  comment   Comment @relation(fields: [commentId], references: [id], onDelete: Cascade)
 }

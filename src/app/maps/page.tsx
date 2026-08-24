@@ -14,9 +14,16 @@ export default async function MapsPage() {
       description: true,
       type: true,
       imageUrl: true,
+      phone: true,
+      website: true,
+      instagram: true,
+      youtube: true,
+      facebook: true,
+      whatsapp: true,
       events: {
-        where: { isPublic: true },
-        orderBy: { eventDate: 'asc' }
+        where: { isPublic: true, eventDate: { gte: new Date() } },
+        orderBy: { eventDate: 'asc' },
+        take: 5,
       }
     },
   });
