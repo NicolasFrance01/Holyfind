@@ -412,10 +412,10 @@ export default function MapsViewClient({ initialChurches }: { initialChurches: C
         <button 
           onClick={() => setShowAddModal(true)}
           style={{
-            background: "var(--primary-color)", color: "white",
+            background: "linear-gradient(135deg, #10b981, #059669)", color: "white",
             border: "none", borderRadius: "99px", padding: "12px 20px",
             fontSize: "0.95rem", fontWeight: 700, cursor: "pointer",
-            boxShadow: "0 10px 25px rgba(79, 70, 229, 0.4)",
+            boxShadow: "0 10px 25px rgba(16, 185, 129, 0.4)",
             display: "flex", alignItems: "center", gap: "8px",
             transition: "transform 0.2s"
           }}
@@ -436,7 +436,8 @@ export default function MapsViewClient({ initialChurches }: { initialChurches: C
           <div style={{
             background: "var(--surface)", border: "1px solid var(--glass-border)",
             borderRadius: "24px", padding: "30px", maxWidth: "500px", width: "100%",
-            boxShadow: "0 25px 50px rgba(0,0,0,0.5)", position: "relative"
+            boxShadow: "0 25px 50px rgba(0,0,0,0.5)", position: "relative",
+            maxHeight: "90vh", overflowY: "auto"
           }}>
             <button 
               onClick={() => setShowAddModal(false)}
@@ -447,45 +448,36 @@ export default function MapsViewClient({ initialChurches }: { initialChurches: C
             >×</button>
             <h2 style={{ fontSize: "1.5rem", fontWeight: 800, marginBottom: "15px", color: "white" }}>¡Sumá tu iglesia al mapa!</h2>
             <p style={{ color: "var(--text-secondary)", fontSize: "0.95rem", lineHeight: 1.5, marginBottom: "25px" }}>
-              Holyfind usa <strong>OpenStreetMap</strong> (el "Wikipedia" de los mapas). Si tu iglesia no aparece, la forma más rápida es agregarla vos mismo al mapa mundial de forma gratuita y en 2 minutos aparecerá para todos.
+              Si querés que tu iglesia figure en el mapa, completá el formulario y nuestro soporte se pondrá en contacto con vos a la brevedad.
             </p>
-
-            <a 
-              href="https://www.openstreetmap.org/edit" 
-              target="_blank" rel="noopener noreferrer"
-              style={{
-                display: "block", textAlign: "center", background: "#7c3aed", color: "white",
-                textDecoration: "none", padding: "14px", borderRadius: "12px", fontWeight: 700, marginBottom: "20px",
-                boxShadow: "0 4px 15px rgba(124, 58, 237, 0.3)"
-              }}
-            >
-              🗺️ Agregarla en OpenStreetMap (Rápido)
-            </a>
-
-            <div style={{ display: "flex", alignItems: "center", gap: "10px", margin: "20px 0" }}>
-              <div style={{ height: "1px", background: "var(--border)", flex: 1 }}></div>
-              <span style={{ color: "var(--text-secondary)", fontSize: "0.8rem", fontWeight: 600 }}>O ENVIANOS LOS DATOS</span>
-              <div style={{ height: "1px", background: "var(--border)", flex: 1 }}></div>
-            </div>
 
             <form onSubmit={(e) => {
               e.preventDefault();
-              alert("¡Gracias! Procesaremos la solicitud pronto. Para resultados inmediatos, te recomendamos agregarla directamente en OpenStreetMap arriba.");
+              alert("¡Gracias! Hemos recibido tu solicitud. Nos contactaremos a la brevedad.");
               setShowAddModal(false);
             }}>
               <div style={{ marginBottom: "15px" }}>
-                <label style={{ display: "block", fontSize: "0.85rem", color: "var(--text-secondary)", marginBottom: "6px" }}>Nombre de la iglesia</label>
+                <label style={{ display: "block", fontSize: "0.85rem", color: "var(--text-secondary)", marginBottom: "6px" }}>Nombre de la iglesia *</label>
                 <input type="text" required placeholder="Ej: Iglesia Bautista Emmanuel" style={{ width: "100%", padding: "12px", borderRadius: "10px", border: "1px solid var(--border)", background: "rgba(255,255,255,0.05)", color: "white" }} />
               </div>
               <div style={{ marginBottom: "15px" }}>
-                <label style={{ display: "block", fontSize: "0.85rem", color: "var(--text-secondary)", marginBottom: "6px" }}>Dirección exacta o Ciudad</label>
+                <label style={{ display: "block", fontSize: "0.85rem", color: "var(--text-secondary)", marginBottom: "6px" }}>Dirección exacta o Ciudad *</label>
                 <input type="text" required placeholder="Ej: Av. San Martín 1234, Córdoba" style={{ width: "100%", padding: "12px", borderRadius: "10px", border: "1px solid var(--border)", background: "rgba(255,255,255,0.05)", color: "white" }} />
               </div>
+              <div style={{ marginBottom: "15px" }}>
+                <label style={{ display: "block", fontSize: "0.85rem", color: "var(--text-secondary)", marginBottom: "6px" }}>Teléfono de contacto *</label>
+                <input type="tel" required placeholder="Ej: +54 9 351 1234567" style={{ width: "100%", padding: "12px", borderRadius: "10px", border: "1px solid var(--border)", background: "rgba(255,255,255,0.05)", color: "white" }} />
+              </div>
+              <div style={{ marginBottom: "20px" }}>
+                <label style={{ display: "block", fontSize: "0.85rem", color: "var(--text-secondary)", marginBottom: "6px" }}>Correo electrónico *</label>
+                <input type="email" required placeholder="Ej: contacto@iglesia.com" style={{ width: "100%", padding: "12px", borderRadius: "10px", border: "1px solid var(--border)", background: "rgba(255,255,255,0.05)", color: "white" }} />
+              </div>
               <button type="submit" style={{
-                width: "100%", background: "transparent", color: "white", border: "1px solid var(--border)",
-                padding: "12px", borderRadius: "10px", fontWeight: 600, cursor: "pointer", marginTop: "10px"
+                width: "100%", background: "#4f46e5", color: "white", border: "none",
+                padding: "14px", borderRadius: "12px", fontWeight: 700, cursor: "pointer",
+                boxShadow: "0 4px 15px rgba(79, 70, 229, 0.3)"
               }}>
-                Enviar solicitud manual
+                Enviar solicitud a Holyfind
               </button>
             </form>
           </div>
