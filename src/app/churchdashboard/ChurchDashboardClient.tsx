@@ -10,16 +10,16 @@ import {
   toggleCommentVisibility, addAuthorizedUser, removeAuthorizedUser
 } from "./actions";
 
-const EVENT_TYPES = ["MISA", "RETIRO", "CONCIERTO", "CONFERENCIA", "BAUTISMO", "BODA", "OTRO"];
+const EVENT_TYPES = ["MISA", "RETIRO", "CONCIERTO", "CONFERENCIA", "BAUTISMO", "BODA", "CONGRESO", "OTRO"];
 const CHURCH_TYPES = ["Católica", "Cristiana Evangélica", "Cristiana", "Islam", "Judaísmo", "Otro"];
 const DAYS = ["LUN", "MAR", "MIÉ", "JUE", "VIE", "SÁB", "DOM"];
 const DAY_KEYS = ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY", "SUNDAY"];
 const EVENT_EMOJI: Record<string, string> = {
   MISA: "🙏", RETIRO: "⛺", CONCIERTO: "🎵", CONFERENCIA: "🎤",
-  BAUTISMO: "💧", BODA: "💍", OTRO: "📅"
+  BAUTISMO: "💧", BODA: "💍", CONGRESO: "🤝", OTRO: "📅"
 };
 
-const defaultEventForm = { title: "", description: "", eventDate: "", type: "MISA", imageUrl: "", videoUrl: "", notes: "", isPublic: true, mediaUrls: [] as string[] };
+const defaultEventForm = { title: "", description: "", eventDate: "", type: "MISA", imageUrl: "", videoUrl: "", notes: "", isPublic: true, mediaUrls: [] as string[], isJointEvent: false, jointChurches: [] as any[] };
 const defaultActivityForm = { title: "", description: "", days: [] as string[], startTime: "", endTime: "", imageUrl: "", videoUrl: "", notes: "", isActive: true, mediaUrls: [] as string[] };
 
 type Section = "perfil" | "eventos" | "actividades" | "comentarios" | "visibilidad" | "autorizados";
@@ -69,7 +69,13 @@ export default function ChurchDashboardClient({ churches, userId, userEmail }: {
 
   const openEvent = (ev?: any) => {
     setEditingEvent(ev || null);
-    setEventForm(ev ? { title: ev.title, description: ev.description || "", eventDate: new Date(ev.eventDate).toISOString().slice(0, 16), type: ev.type, imageUrl: ev.imageUrl || "", videoUrl: ev.videoUrl || "", notes: ev.notes || "", isPublic: ev.isPublic, mediaUrls: ev.media?.map((m: any) => m.url) || [] } : { ...defaultEventForm });
+    setEventForm(ev ? {
+      title: ev.title, description: ev.description || "", eventDate: new Date(ev.eventDate).toISOString().slice(0, 16),
+      type: ev.type, imageUrl: ev.imageUrl || "", videoUrl: ev.videoUrl || "", notes: ev.notes || "", isPublic: ev.isPublic,
+      mediaUrls: ev.media?.map((m: any) => m.url) || [],
+      isJointEvent: (ev.jointChurches && Array.isArray(ev.jointChurches) && ev.jointChurches.length > 0) ? true : false,
+      jointChurches: (ev.jointChurches && Array.isArray(ev.jointChurches)) ? ev.jointChurches : [],
+    } : { ...defaultEventForm });
     setIsEventOpen(true);
   };
 
@@ -439,19 +445,63 @@ export default function ChurchDashboardClient({ churches, userId, userEmail }: {
               <div className="form-group"><label className="form-label">Descripción</label><textarea className="form-input" rows={3} value={eventForm.description} onChange={e => setEventForm({ ...eventForm, description: e.target.value })} /></div>
               <div>
                 <label className="form-label" style={{ marginBottom: "8px" }}>Imagen de Portada</label>
-                <ImageUploader currentUrl={eventForm.imageUrl} onUploaded={url => setEventForm(f => ({ ...f, imageUrl: url }))} folder="event-covers" placeholder="Portada del evento" size="medium" />
+                <ImageUploader currentUrl={eventForm.imageUrl} onUploaded={url => setEventForm(f => ({ ...f, imageUrl: url }))} folder="event-covers" placeholder="Portada del evento" size="medium" disableCrop={true} />
               </div>
+              
+              {eventForm.type === "CONGRESO" && (
+                <div style={{ background: "rgba(99,102,241,0.05)", padding: "12px", borderRadius: "8px", border: "1px solid rgba(99,102,241,0.2)" }}>
+                  <label className="form-label" style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer", margin: 0 }}>
+                    <input type="checkbox" checked={eventForm.isJointEvent} onChange={e => setEventForm({ ...eventForm, isJointEvent: e.target.checked })} />
+                    Es un evento conjunto con otras iglesias
+                  </label>
+                  {eventForm.isJointEvent && (
+                    <div style={{ marginTop: "12px" }}>
+                      <p style={{ fontSize: "0.8rem", color: "var(--text-secondary)", marginBottom: "8px" }}>Agregá las iglesias. Si no están en el sistema, recomendales que contacten a soporte Holyfind para unirse.</p>
+                      <div style={{ display: "flex", gap: "8px", marginBottom: "8px" }}>
+                        <input type="text" id="jointChurchInput" placeholder="Nombre de la iglesia..." className="form-input" style={{ flex: 1 }} onKeyDown={e => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            const val = (e.target as HTMLInputElement).value.trim();
+                            if (val) {
+                              setEventForm(f => ({ ...f, jointChurches: [...f.jointChurches, { name: val }] }));
+                              (e.target as HTMLInputElement).value = "";
+                            }
+                          }
+                        }} />
+                        <button type="button" className="btn-secondary" style={{ padding: "0 12px" }} onClick={() => {
+                          const input = document.getElementById("jointChurchInput") as HTMLInputElement;
+                          const val = input?.value.trim();
+                          if (val) {
+                            setEventForm(f => ({ ...f, jointChurches: [...f.jointChurches, { name: val }] }));
+                            input.value = "";
+                          }
+                        }}>Agregar</button>
+                      </div>
+                      <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
+                        {eventForm.jointChurches.map((jc: any, i: number) => (
+                          <span key={i} style={{ background: "rgba(255,255,255,0.1)", padding: "4px 8px", borderRadius: "4px", fontSize: "0.8rem", display: "flex", alignItems: "center", gap: "6px" }}>
+                            {jc.name} <button type="button" onClick={() => setEventForm(f => ({ ...f, jointChurches: f.jointChurches.filter((_, idx) => idx !== i) }))} style={{ background: "none", border: "none", color: "#f87171", cursor: "pointer" }}>×</button>
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
               <div className="form-group"><label className="form-label">🎥 Link de Video (YouTube/Instagram)</label><input className="form-input" type="url" placeholder="https://youtube.com/..." value={eventForm.videoUrl} onChange={e => setEventForm({ ...eventForm, videoUrl: e.target.value })} /></div>
               <div>
-                <label className="form-label" style={{ marginBottom: "8px" }}>📸 Carrusel de Fotos</label>
+                <label className="form-label" style={{ marginBottom: "8px" }}>📸 Carrusel de Fotos (Podés elegir múltiples fotos a la vez)</label>
                 <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", marginBottom: "8px" }}>
                   {eventForm.mediaUrls.map((url: string, i: number) => (
                     <div key={i} style={{ position: "relative" }}>
                       <img src={url} alt="" style={{ width: "70px", height: "70px", objectFit: "contain", borderRadius: "8px", background: "rgba(0,0,0,0.3)" }} />
-                      <button onClick={() => removeMedia(i, eventForm, setEventForm)} type="button" style={{ position: "absolute", top: "-6px", right: "-6px", background: "#ef4444", border: "none", color: "white", borderRadius: "50%", width: "18px", height: "18px", cursor: "pointer", fontSize: "10px" }}>×</button>
+                      <button onClick={() => removeMedia(i, eventForm, setEventForm)} type="button" style={{ position: "absolute", top: "-4px", right: "-4px", background: "#ef4444", color: "white", borderRadius: "50%", width: "20px", height: "20px", border: "none", cursor: "pointer", fontSize: "10px" }}>×</button>
                     </div>
                   ))}
-                  {eventForm.mediaUrls.length < 50 && <ImageUploader onUploaded={url => addMedia(url, eventForm, setEventForm)} folder="event-gallery" placeholder="Agregar foto" size="small" />}
+                  {eventForm.mediaUrls.length < 50 && (
+                    <ImageUploader onUploaded={url => addMedia(url, eventForm, setEventForm)} folder="event-gallery" placeholder="Agregar foto" size="small" disableCrop={true} multiple={true} />
+                  )}
                 </div>
               </div>
               <div className="form-group"><label className="form-label">📢 Notas / Notificación</label><textarea className="form-input" rows={2} value={eventForm.notes} placeholder="Nota que verán los seguidores..." onChange={e => setEventForm({ ...eventForm, notes: e.target.value })} /></div>
@@ -505,7 +555,9 @@ export default function ChurchDashboardClient({ churches, userId, userEmail }: {
                       <button onClick={() => removeMedia(i, activityForm, setActivityForm)} type="button" style={{ position: "absolute", top: "-6px", right: "-6px", background: "#ef4444", border: "none", color: "white", borderRadius: "50%", width: "18px", height: "18px", cursor: "pointer", fontSize: "10px" }}>×</button>
                     </div>
                   ))}
-                  {activityForm.mediaUrls.length < 50 && <ImageUploader onUploaded={url => addMedia(url, activityForm, setActivityForm)} folder="activity-gallery" placeholder="Agregar foto" size="small" />}
+                  {activityForm.mediaUrls.length < 50 && (
+                    <ImageUploader onUploaded={url => addMedia(url, activityForm, setActivityForm)} folder="activity-gallery" placeholder="Agregar foto" size="small" disableCrop={true} multiple={true} />
+                  )}
                 </div>
               </div>
               <div className="form-group"><label className="form-label">📢 Notas / Notificación</label><textarea className="form-input" rows={2} value={activityForm.notes} placeholder="Nota visible para los seguidores..." onChange={e => setActivityForm({ ...activityForm, notes: e.target.value })} /></div>

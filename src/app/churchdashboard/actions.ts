@@ -51,6 +51,7 @@ export async function createEvent(userId: string, churchId: string, data: any) {
         videoUrl: data.videoUrl || null,
         notes: data.notes || null,
         isPublic: data.isPublic ?? true,
+        jointChurches: data.jointChurches && data.jointChurches.length > 0 ? data.jointChurches : null,
         churchId,
       }
     });
@@ -80,6 +81,7 @@ export async function updateEvent(userId: string, churchId: string, eventId: str
         videoUrl: data.videoUrl || null,
         notes: data.notes || null,
         isPublic: data.isPublic ?? true,
+        jointChurches: data.jointChurches && data.jointChurches.length > 0 ? data.jointChurches : null,
       }
     });
     // Refresh carrusel media

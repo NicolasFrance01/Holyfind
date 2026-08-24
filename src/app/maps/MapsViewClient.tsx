@@ -53,6 +53,7 @@ export default function MapsViewClient({ initialChurches }: { initialChurches: C
   // Detail Modal & Events Panel
   const [detailModalChurch, setDetailModalChurch] = useState<any>(null);
   const [showEventsPanel, setShowEventsPanel] = useState(false);
+  const [hasNewEvents, setHasNewEvents] = useState(false);
   const [publicEvents, setPublicEvents] = useState<any[]>([]);
   const [userLikes, setUserLikes] = useState<string[]>([]);
   const [userSaves, setUserSaves] = useState<string[]>([]);
@@ -65,6 +66,12 @@ export default function MapsViewClient({ initialChurches }: { initialChurches: C
         const events = await getPublicEvents();
         setPublicEvents(events);
         
+        // Notification check for new events
+        const lastSeen = localStorage.getItem("holyfind_last_seen_events");
+        const lastSeenTime = lastSeen ? parseInt(lastSeen, 10) : 0;
+        const hasUnread = events.some((ev: any) => new Date(ev.createdAt).getTime() > lastSeenTime);
+        setHasNewEvents(hasUnread);
+
         if (session?.user) {
           const res = await fetch("/api/user-data");
           if (res.ok) {
@@ -400,19 +407,31 @@ export default function MapsViewClient({ initialChurches }: { initialChurches: C
       {/* Floating Buttons: Add Church & Events Panel */}
       <div style={{ position: "absolute", bottom: "30px", right: "20px", zIndex: 1000, display: "flex", flexDirection: "column", gap: "12px" }}>
         <button 
-          onClick={() => setShowEventsPanel(true)}
+          onClick={() => {
+            setShowEventsPanel(true);
+            setHasNewEvents(false);
+            localStorage.setItem("holyfind_last_seen_events", Date.now().toString());
+          }}
           style={{
             background: "rgba(15, 23, 42, 0.7)", color: "white",
-            border: "1px solid rgba(255, 255, 255, 0.15)", borderRadius: "99px", padding: "12px 20px",
+            border: hasNewEvents ? "1px solid #ef4444" : "1px solid rgba(255, 255, 255, 0.15)", borderRadius: "99px", padding: "12px 20px",
             fontSize: "0.95rem", fontWeight: 700, cursor: "pointer",
-            boxShadow: "0 8px 32px rgba(0, 0, 0, 0.4)", backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)",
+            boxShadow: hasNewEvents ? "0 0 20px rgba(239, 68, 68, 0.5)" : "0 8px 32px rgba(0, 0, 0, 0.4)", backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)",
             display: "flex", alignItems: "center", gap: "8px",
-            transition: "transform 0.2s, background 0.2s"
+            transition: "transform 0.2s, background 0.2s",
+            position: "relative"
           }}
           onMouseEnter={e => { e.currentTarget.style.transform = "scale(1.05)"; e.currentTarget.style.background = "rgba(15, 23, 42, 0.85)"; }}
           onMouseLeave={e => { e.currentTarget.style.transform = "scale(1)"; e.currentTarget.style.background = "rgba(15, 23, 42, 0.7)"; }}
         >
           <span>📅</span> Ver Próximos Eventos
+          {hasNewEvents && (
+            <span style={{
+              position: "absolute", top: "-4px", right: "-4px", width: "12px", height: "12px",
+              background: "#ef4444", borderRadius: "50%", border: "2px solid #0f172a",
+              boxShadow: "0 0 8px #ef4444", animation: "pulse 1.5s infinite"
+            }} />
+          )}
         </button>
 
         <button 

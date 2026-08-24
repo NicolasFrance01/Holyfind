@@ -11,6 +11,8 @@ interface ImageUploaderProps {
   placeholder?: string;
   size?: "small" | "medium" | "large";
   shape?: "circle" | "square";
+  disableCrop?: boolean;
+  multiple?: boolean;
 }
 
 export default function ImageUploader({
@@ -20,6 +22,8 @@ export default function ImageUploader({
   placeholder = "Subir imagen",
   size = "medium",
   shape = "square",
+  disableCrop = false,
+  multiple = false,
 }: ImageUploaderProps) {
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
@@ -41,12 +45,41 @@ export default function ImageUploader({
   }, []);
 
   const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
 
     setError("");
 
-    // Load file for cropping
+    if (disableCrop) {
+      // Upload directly without cropper
+      setUploading(true);
+      try {
+        for (let i = 0; i < files.length; i++) {
+          const file = files[i];
+          const formData = new FormData();
+          formData.append("file", file);
+          formData.append("folder", folder);
+
+          const res = await fetch("/api/upload", { method: "POST", body: formData });
+          const data = await res.json();
+          if (res.ok) {
+            onUploaded(data.url);
+          } else {
+            setError(data.error || "Error al subir");
+          }
+        }
+      } catch (e) {
+        console.error(e);
+        setError("Error de red");
+      } finally {
+        setUploading(false);
+        e.target.value = "";
+      }
+      return;
+    }
+
+    // Load first file for cropping (multiple unsupported with crop)
+    const file = files[0];
     const reader = new FileReader();
     reader.onload = (ev) => {
       setImageSrc(ev.target?.result as string);
@@ -151,6 +184,7 @@ export default function ImageUploader({
       <input
         ref={inputRef}
         type="file"
+        multiple={multiple}
         accept="image/*"
         style={{ display: "none" }}
         onChange={handleFile}

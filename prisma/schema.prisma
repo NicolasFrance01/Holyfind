@@ -21,6 +21,7 @@ enum EventType {
   CONFERENCIA
   BAUTISMO
   BODA
+  CONGRESO
   OTRO
 }
 
@@ -144,20 +145,21 @@ model ChurchStat {
 // ─── Event ───────────────────────────────────────────────────────────────────
 
 model Event {
-  id          String    @id @default(uuid())
-  title       String
-  description String?
-  eventDate   DateTime
-  type        EventType @default(OTRO)
-  imageUrl    String?
-  videoUrl    String?
-  notes       String?
-  isPublic    Boolean   @default(true)
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  id            String    @id @default(uuid())
+  title         String
+  description   String?
+  eventDate     DateTime
+  type          EventType @default(OTRO)
+  imageUrl      String?
+  videoUrl      String?
+  notes         String?
+  isPublic      Boolean   @default(true)
+  churchId      String
+  jointChurches Json?     // [{id?, name, isOsm?}]
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 
-  churchId String
-  church   Church @relation(fields: [churchId], references: [id], onDelete: Cascade)
+  church        Church    @relation(fields: [churchId], references: [id], onDelete: Cascade)
 
   media EventMedia[]
   saves EventSave[]

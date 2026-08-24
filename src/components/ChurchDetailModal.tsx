@@ -33,13 +33,14 @@ export default function ChurchDetailModal({ church, onClose, userId, followingCh
   const [rating, setRating] = useState(5);
   const [commentText, setCommentText] = useState("");
   const [commentSent, setCommentSent] = useState(false);
+  const [showAuthPrompt, setShowAuthPrompt] = useState(false);
 
   useEffect(() => {
     trackChurchClick(church.id, "profile_view");
   }, [church.id]);
 
   const doFollow = () => {
-    if (!currentUserId) return;
+    if (!currentUserId) { setShowAuthPrompt(true); return; }
     startTransition(async () => {
       const r = await toggleFollowChurch(currentUserId, church.id);
       setIsFollowing(r.following);
@@ -47,7 +48,7 @@ export default function ChurchDetailModal({ church, onClose, userId, followingCh
   };
 
   const doLike = (eventId: string) => {
-    if (!currentUserId) return;
+    if (!currentUserId) { setShowAuthPrompt(true); return; }
     startTransition(async () => {
       const r = await toggleEventLike(currentUserId, eventId);
       setLocalLikes(prev => { const s = new Set(prev); r.liked ? s.add(eventId) : s.delete(eventId); return s; });
@@ -55,7 +56,7 @@ export default function ChurchDetailModal({ church, onClose, userId, followingCh
   };
 
   const doSave = (eventId: string) => {
-    if (!currentUserId) return;
+    if (!currentUserId) { setShowAuthPrompt(true); return; }
     startTransition(async () => {
       const r = await toggleEventSave(currentUserId, eventId);
       setLocalSaves(prev => { const s = new Set(prev); r.saved ? s.add(eventId) : s.delete(eventId); return s; });
@@ -87,8 +88,8 @@ export default function ChurchDetailModal({ church, onClose, userId, followingCh
   const followerCount = church.followers?.length || 0;
 
   return (
-    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", backdropFilter: "blur(12px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 2000, padding: "16px" }}>
-      <div style={{ width: "100%", maxWidth: "640px", maxHeight: "94vh", background: "rgba(15, 23, 42, 0.8)", border: "1px solid rgba(255,255,255,0.15)", boxShadow: "0 25px 50px -12px rgba(0,0,0,0.5)", borderRadius: "20px", overflow: "hidden", display: "flex", flexDirection: "column", backdropFilter: "blur(24px)", WebkitBackdropFilter: "blur(24px)" }}>
+    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.75)", backdropFilter: "blur(12px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 2000, padding: "16px" }}>
+      <div style={{ width: "100%", maxWidth: "640px", maxHeight: "94vh", background: "#0b0f19", border: "1px solid rgba(99,102,241,0.3)", boxShadow: "0 25px 50px -12px rgba(0,0,0,0.8)", borderRadius: "20px", overflow: "hidden", display: "flex", flexDirection: "column" }}>
         <div style={{ flex: 1, overflowY: "auto" }}>
           {/* Hero */}
           <div style={{ position: "relative" }}>
@@ -117,8 +118,8 @@ export default function ChurchDetailModal({ church, onClose, userId, followingCh
 
           {/* Follow + Directions */}
           <div style={{ display: "flex", gap: "8px", marginBottom: "18px" }}>
-            <button onClick={doFollow} disabled={!currentUserId || isPending} style={{
-              flex: 1, padding: "10px", borderRadius: "10px", border: "1px solid", cursor: currentUserId ? "pointer" : "not-allowed", fontWeight: 700, fontSize: "0.88rem", transition: "all 0.2s",
+            <button onClick={doFollow} disabled={isPending} style={{
+              flex: 1, padding: "10px", borderRadius: "10px", border: "1px solid", cursor: "pointer", fontWeight: 700, fontSize: "0.88rem", transition: "all 0.2s",
               background: isFollowing ? "rgba(99,102,241,0.25)" : "transparent",
               color: isFollowing ? "#818cf8" : "var(--text-secondary)",
               borderColor: isFollowing ? "rgba(99,102,241,0.5)" : "var(--border)"
@@ -162,32 +163,43 @@ export default function ChurchDetailModal({ church, onClose, userId, followingCh
             <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
               {(church.events || []).length === 0 ? (
                 <p style={{ color: "var(--text-secondary)", textAlign: "center", padding: "20px" }}>Sin eventos próximos</p>
-              ) : (church.events || []).map((ev: any) => (
-                <div key={ev.id} style={{ padding: "14px", borderRadius: "12px", border: "1px solid var(--glass-border)", background: "rgba(255,255,255,0.03)" }}>
-                  {ev.imageUrl && <img src={ev.imageUrl} alt={ev.title} style={{ width: "100%", height: "80px", objectFit: "cover", borderRadius: "8px", marginBottom: "8px" }} />}
-                  <h3 style={{ color: "white", fontSize: "0.9rem", fontWeight: 700, margin: "0 0 4px" }}>{ev.title}</h3>
-                  <p style={{ color: "var(--text-secondary)", fontSize: "0.78rem", margin: "0 0 8px" }}>🗓️ {new Date(ev.eventDate).toLocaleString("es-AR", { dateStyle: "long", timeStyle: "short" })}</p>
-                  {ev.description && <p style={{ color: "var(--text-secondary)", fontSize: "0.82rem", marginBottom: "8px" }}>{ev.description}</p>}
-                  {ev.notes && <p style={{ color: "#818cf8", fontSize: "0.8rem", padding: "6px 10px", background: "rgba(99,102,241,0.1)", borderRadius: "6px", marginBottom: "8px" }}>📢 {ev.notes}</p>}
-                  {ev.media?.length > 0 && (
-                    <div style={{ display: "flex", gap: "6px", overflowX: "auto", marginBottom: "8px" }}>
-                      {ev.media.map((m: any, i: number) => <img key={i} src={m.url} alt="" style={{ height: "60px", width: "80px", objectFit: "contain", background: "rgba(0,0,0,0.3)", borderRadius: "6px", flexShrink: 0 }} />)}
+                  {/* Event item */}
+                  <div key={ev.id} style={{ padding: "14px", borderRadius: "12px", border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.03)" }}>
+                    {ev.imageUrl && <img src={ev.imageUrl} alt={ev.title} style={{ width: "100%", height: "120px", objectFit: "contain", background: "rgba(0,0,0,0.4)", borderRadius: "8px", marginBottom: "8px" }} />}
+                    <h3 style={{ color: "white", fontSize: "0.95rem", fontWeight: 700, margin: "0 0 4px" }}>{ev.title}</h3>
+                    
+                    {/* Organiza / Conjunto */}
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", marginBottom: "8px", fontSize: "0.78rem" }}>
+                      <span style={{ color: "#a5b4fc", background: "rgba(99,102,241,0.15)", padding: "2px 8px", borderRadius: "6px", fontWeight: 600 }}>⛪ Patrocina: {church.name}</span>
+                      {ev.jointChurches && (typeof ev.jointChurches === "string" ? JSON.parse(ev.jointChurches) : ev.jointChurches)?.length > 0 && (
+                        <span style={{ color: "#f472b6", background: "rgba(244,114,182,0.15)", padding: "2px 8px", borderRadius: "6px", fontWeight: 600 }}>
+                          🤝 Con: {(typeof ev.jointChurches === "string" ? JSON.parse(ev.jointChurches) : ev.jointChurches).map((j: any) => j.name).join(", ")}
+                        </span>
+                      )}
                     </div>
-                  )}
-                  {ev.videoUrl && (
-                    embedUrl(ev.videoUrl)
-                      ? <div style={{ borderRadius: "8px", overflow: "hidden", position: "relative", paddingTop: "40%", marginBottom: "8px" }}><iframe src={embedUrl(ev.videoUrl)!} style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%" }} frameBorder={0} allowFullScreen /></div>
-                      : <a href={ev.videoUrl} target="_blank" rel="noopener" style={{ display: "inline-block", marginBottom: "8px", color: "#818cf8", fontSize: "0.82rem" }}>🎥 Ver Video</a>
-                  )}
-                  <div style={{ display: "flex", gap: "6px" }}>
-                    <button onClick={() => doLike(ev.id)} disabled={!currentUserId || isPending} style={{ flex: 1, padding: "6px", borderRadius: "7px", border: "1px solid", cursor: currentUserId ? "pointer" : "not-allowed", fontSize: "0.8rem", fontWeight: 600, background: localLikes.has(ev.id) ? "rgba(239,68,68,0.2)" : "transparent", color: localLikes.has(ev.id) ? "#f87171" : "var(--text-secondary)", borderColor: localLikes.has(ev.id) ? "rgba(239,68,68,0.4)" : "var(--border)" }}>
-                      {localLikes.has(ev.id) ? "❤️" : "🤍"} {ev.likes?.length || 0}
-                    </button>
-                    <button onClick={() => doSave(ev.id)} disabled={!currentUserId || isPending} style={{ flex: 1, padding: "6px", borderRadius: "7px", border: "1px solid", cursor: currentUserId ? "pointer" : "not-allowed", fontSize: "0.8rem", fontWeight: 600, background: localSaves.has(ev.id) ? "rgba(99,102,241,0.2)" : "transparent", color: localSaves.has(ev.id) ? "#818cf8" : "var(--text-secondary)", borderColor: localSaves.has(ev.id) ? "rgba(99,102,241,0.4)" : "var(--border)" }}>
-                      {localSaves.has(ev.id) ? "🔖" : "🏷️"} {localSaves.has(ev.id) ? "Guardado" : "Guardar"}
-                    </button>
+
+                    <p style={{ color: "var(--text-secondary)", fontSize: "0.78rem", margin: "0 0 8px" }}>🗓️ {new Date(ev.eventDate).toLocaleString("es-AR", { dateStyle: "long", timeStyle: "short" })}</p>
+                    {ev.description && <p style={{ color: "var(--text-secondary)", fontSize: "0.82rem", marginBottom: "8px" }}>{ev.description}</p>}
+                    {ev.notes && <p style={{ color: "#818cf8", fontSize: "0.8rem", padding: "6px 10px", background: "rgba(99,102,241,0.1)", borderRadius: "6px", marginBottom: "8px" }}>📢 {ev.notes}</p>}
+                    {ev.media?.length > 0 && (
+                      <div style={{ display: "flex", gap: "6px", overflowX: "auto", marginBottom: "8px" }}>
+                        {ev.media.map((m: any, i: number) => <img key={i} src={m.url} alt="" style={{ height: "60px", width: "80px", objectFit: "contain", background: "rgba(0,0,0,0.3)", borderRadius: "6px", flexShrink: 0 }} />)}
+                      </div>
+                    )}
+                    {ev.videoUrl && (
+                      embedUrl(ev.videoUrl)
+                        ? <div style={{ borderRadius: "8px", overflow: "hidden", position: "relative", paddingTop: "40%", marginBottom: "8px" }}><iframe src={embedUrl(ev.videoUrl)!} style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%" }} frameBorder={0} allowFullScreen /></div>
+                        : <a href={ev.videoUrl} target="_blank" rel="noopener" style={{ display: "inline-block", marginBottom: "8px", color: "#818cf8", fontSize: "0.82rem" }}>🎥 Ver Video</a>
+                    )}
+                    <div style={{ display: "flex", gap: "6px" }}>
+                      <button onClick={() => doLike(ev.id)} disabled={isPending} style={{ flex: 1, padding: "6px", borderRadius: "7px", border: "1px solid", cursor: "pointer", fontSize: "0.8rem", fontWeight: 600, background: localLikes.has(ev.id) ? "rgba(239,68,68,0.2)" : "transparent", color: localLikes.has(ev.id) ? "#f87171" : "var(--text-secondary)", borderColor: localLikes.has(ev.id) ? "rgba(239,68,68,0.4)" : "var(--border)" }}>
+                        {localLikes.has(ev.id) ? "❤️" : "🤍"} {ev.likes?.length || 0}
+                      </button>
+                      <button onClick={() => doSave(ev.id)} disabled={isPending} style={{ flex: 1, padding: "6px", borderRadius: "7px", border: "1px solid", cursor: "pointer", fontSize: "0.8rem", fontWeight: 600, background: localSaves.has(ev.id) ? "rgba(99,102,241,0.2)" : "transparent", color: localSaves.has(ev.id) ? "#818cf8" : "var(--text-secondary)", borderColor: localSaves.has(ev.id) ? "rgba(99,102,241,0.4)" : "var(--border)" }}>
+                        {localSaves.has(ev.id) ? "🔖" : "🏷️"} {localSaves.has(ev.id) ? "Guardado" : "Guardar"}
+                      </button>
+                    </div>
                   </div>
-                </div>
               ))}
             </div>
           )}
@@ -265,6 +277,22 @@ export default function ChurchDetailModal({ church, onClose, userId, followingCh
         </div>
         </div>
       </div>
+
+      {/* Auth Prompt Modal */}
+      {showAuthPrompt && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.8)", backdropFilter: "blur(8px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 3000, padding: "20px" }}>
+          <div style={{ background: "#0f172a", border: "1px solid rgba(99,102,241,0.4)", borderRadius: "16px", padding: "24px", maxWidth: "400px", width: "100%", textAlign: "center" }}>
+            <div style={{ fontSize: "2.5rem", marginBottom: "12px" }}>🔒</div>
+            <h3 style={{ color: "white", fontSize: "1.2rem", fontWeight: 800, margin: "0 0 8px" }}>¡Iniciá Sesión para Interactuar!</h3>
+            <p style={{ color: "var(--text-secondary)", fontSize: "0.85rem", marginBottom: "20px" }}>Para seguir esta iglesia o guardar eventos en tu perfil necesitás tener una cuenta.</p>
+            <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+              <button onClick={() => window.location.href = "/login"} className="btn-primary" style={{ padding: "10px" }}>🔑 Iniciar Sesión</button>
+              <button onClick={() => window.location.href = "/login?signup=true"} className="btn-secondary" style={{ padding: "10px" }}>✨ Crear una Cuenta</button>
+              <button onClick={() => setShowAuthPrompt(false)} style={{ background: "none", border: "none", color: "var(--text-secondary)", fontSize: "0.8rem", cursor: "pointer", marginTop: "4px" }}>Cancelar</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
