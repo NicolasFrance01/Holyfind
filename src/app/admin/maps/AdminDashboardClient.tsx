@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import Link from "next/link";
-import { toggleUserStatus, deleteChurch, deleteUser, assignChurchManager, removeChurchManager } from "../actions";
+import { toggleUserStatus, deleteChurch, deleteUser, updateUser, assignChurchManager, removeChurchManager } from "../actions";
 import { saveChurch } from "@/app/admin/actions";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
@@ -37,6 +37,8 @@ export default function AdminDashboardClient({ churches, users, normalUsers }: {
   const [selectedChurch, setSelectedChurch] = useState<any>(null);
   const [churchToDelete, setChurchToDelete] = useState<any>(null);
   const [userToDelete, setUserToDelete] = useState<any>(null);
+  const [userToEdit, setUserToEdit] = useState<any>(null);
+  const [userEditForm, setUserEditForm] = useState({ name: "", email: "", phone: "", recoveryEmail: "", password: "" });
   const [formData, setFormData] = useState<ChurchFormData>(defaultForm);
   const [isCreateUserOpen, setIsCreateUserOpen] = useState(false);
   const [userCreateMsg, setUserCreateMsg] = useState<{ text: string; ok: boolean } | null>(null);
@@ -67,6 +69,27 @@ export default function AdminDashboardClient({ churches, users, normalUsers }: {
       startTransition(() => {
         deleteUser(userToDelete.id);
         setUserToDelete(null);
+      });
+    }
+  };
+
+  const handleEditUser = (u: any) => {
+    setUserToEdit(u);
+    setUserEditForm({
+      name: u.name || "",
+      email: u.email || "",
+      phone: u.phone || "",
+      recoveryEmail: u.recoveryEmail || "",
+      password: "" // password only filled if changing
+    });
+  };
+
+  const handleSaveUserEdit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (userToEdit) {
+      startTransition(async () => {
+        await updateUser(userToEdit.id, userEditForm);
+        setUserToEdit(null);
       });
     }
   };
@@ -246,6 +269,7 @@ export default function AdminDashboardClient({ churches, users, normalUsers }: {
                             >
                               {u.isActive ? "Suspender" : "Restaurar"}
                             </button>
+                            <button className="btn-secondary" style={{ padding: "4px 10px", fontSize: "0.8rem", color: "#6366f1", borderColor: "rgba(99, 102, 241, 0.5)" }} onClick={() => handleEditUser(u)}>Editar</button>
                             <button className="btn-secondary" style={{ padding: "4px 10px", fontSize: "0.8rem", color: "#ef4444", borderColor: "rgba(239, 68, 68, 0.5)" }} onClick={() => setUserToDelete(u)}>Eliminar</button>
                           </td>
                         </tr>
@@ -311,6 +335,7 @@ export default function AdminDashboardClient({ churches, users, normalUsers }: {
                             >
                               {u.isActive ? "Suspender" : "Restaurar"}
                             </button>
+                            <button className="btn-secondary" style={{ padding: "4px 10px", fontSize: "0.8rem", color: "#6366f1", borderColor: "rgba(99, 102, 241, 0.5)" }} onClick={() => handleEditUser(u)}>Editar</button>
                             <button className="btn-secondary" style={{ padding: "4px 10px", fontSize: "0.8rem", color: "#ef4444", borderColor: "rgba(239, 68, 68, 0.5)" }} onClick={() => setUserToDelete(u)}>Eliminar</button>
                           </td>
                         </tr>
@@ -555,6 +580,42 @@ export default function AdminDashboardClient({ churches, users, normalUsers }: {
                 {isPending ? "Eliminando..." : "Sí, Eliminar"}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit User Modal */}
+      {userToEdit && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)", backdropFilter: "blur(4px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 300, padding: "20px" }}>
+          <div className="glass-panel" style={{ width: "100%", maxWidth: "480px", padding: "30px", maxHeight: "90vh", overflowY: "auto" }}>
+            <h2 style={{ marginBottom: "20px", fontSize: "1.5rem" }}>Editar Usuario</h2>
+            <form onSubmit={handleSaveUserEdit} style={{ display: "flex", flexDirection: "column", gap: "15px" }}>
+              <div className="form-group">
+                <label className="form-label">Nombre</label>
+                <input required className="form-input" value={userEditForm.name} onChange={e => setUserEditForm({...userEditForm, name: e.target.value})} />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Email</label>
+                <input required type="email" className="form-input" value={userEditForm.email} onChange={e => setUserEditForm({...userEditForm, email: e.target.value.toLowerCase()})} />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Teléfono</label>
+                <input className="form-input" value={userEditForm.phone} onChange={e => setUserEditForm({...userEditForm, phone: e.target.value})} />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Email de Recuperación</label>
+                <input type="email" className="form-input" value={userEditForm.recoveryEmail} onChange={e => setUserEditForm({...userEditForm, recoveryEmail: e.target.value.toLowerCase()})} />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Nueva Contraseña (opcional)</label>
+                <input type="text" className="form-input" placeholder="Dejar en blanco para mantener la actual" value={userEditForm.password} onChange={e => setUserEditForm({...userEditForm, password: e.target.value})} />
+              </div>
+              
+              <div style={{ display: "flex", gap: "10px", marginTop: "10px", justifyContent: "flex-end" }}>
+                <button type="button" className="btn-secondary" onClick={() => setUserToEdit(null)}>Cancelar</button>
+                <button type="submit" className="btn-primary" disabled={isPending}>{isPending ? "Guardando..." : "Guardar Cambios"}</button>
+              </div>
+            </form>
           </div>
         </div>
       )}

@@ -28,6 +28,34 @@ export async function deleteUser(userId: string) {
   }
 }
 
+import bcrypt from "bcryptjs";
+
+export async function updateUser(userId: string, data: any) {
+  try {
+    const updateData: any = {
+      name: data.name,
+      email: data.email,
+      phone: data.phone,
+      recoveryEmail: data.recoveryEmail,
+    };
+
+    if (data.password) {
+      updateData.password = await bcrypt.hash(data.password, 10);
+    }
+
+    await prisma.user.update({
+      where: { id: userId },
+      data: updateData,
+    });
+    
+    revalidatePath("/admin/maps");
+    return { success: true };
+  } catch (error) {
+    console.error("Error updating user:", error);
+    return { error: "Failed to update user" };
+  }
+}
+
 export async function deleteChurch(churchId: string) {
   try {
     await prisma.church.delete({
