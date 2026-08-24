@@ -284,9 +284,15 @@ out center tags;`;
       const type = c.type || "Cristiana";
       const color = TYPE_COLORS[type] || "#818cf8";
       const emoji = TYPE_EMOJI[type] || "⛪";
-      L.marker([c.latitude, c.longitude], { icon: makePinIcon(L, color, emoji, c.imageUrl) })
+      const marker = L.marker([c.latitude, c.longitude], { icon: makePinIcon(L, color, emoji, c.imageUrl) })
         .addTo(map)
         .bindPopup(buildPopupHTML(c.name, type, c.address, c.latitude, c.longitude, true, isAdmin, c.events || [], c));
+
+      marker.on("popupopen", () => {
+        if ((window as any).trackChurchClickEvent) {
+          (window as any).trackChurchClickEvent(c.id, "map_click");
+        }
+      });
     });
 
     // Eventos de movimiento -> Mostrar botón de "Buscar en esta zona"

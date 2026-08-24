@@ -6,7 +6,7 @@ import MapLoader from "@/components/MapLoader";
 import { useSession, signIn, signOut } from "next-auth/react";
 import EventsPanel from "@/components/EventsPanel";
 import ChurchDetailModal from "@/components/ChurchDetailModal";
-import { getPublicEvents, getPublicChurchDetail } from "@/app/dashboard/userActions";
+import { getPublicEvents, getPublicChurchDetail, trackChurchClick } from "@/app/dashboard/userActions";
 
 type Church = {
   id: string;
@@ -85,6 +85,8 @@ export default function MapsViewClient({ initialChurches }: { initialChurches: C
     try {
       const data = await getPublicChurchDetail(id);
       if (data) setDetailModalChurch(data);
+      // Track profile view when opening the detail modal
+      trackChurchClick(id, "profile_view");
     } catch (e) {
       console.error(e);
     }
@@ -92,6 +94,9 @@ export default function MapsViewClient({ initialChurches }: { initialChurches: C
 
   useEffect(() => {
     (window as any).openChurchDetail = openChurchDetail;
+    (window as any).trackChurchClickEvent = (id: string, type: "map_click" | "profile_view") => {
+      trackChurchClick(id, type);
+    };
   }, []);
 
   const filters = ["Todas", "Católica", "Cristiana Evangélica", "Cristiana", "Islam", "Judaísmo", "Otro"];
