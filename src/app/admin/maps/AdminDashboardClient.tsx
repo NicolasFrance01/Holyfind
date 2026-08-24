@@ -376,7 +376,7 @@ export default function AdminDashboardClient({ churches, users, normalUsers }: {
 
       {/* Modal Form */}
       {isModalOpen && !isPickingLocation && (
-        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100 }}>
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 3000 }}>
           <div className="glass-panel" style={{ width: "90%", maxWidth: "500px", padding: "30px", maxHeight: "90vh", overflowY: "auto" }}>
             <h2 style={{ marginBottom: "20px", fontSize: "1.5rem" }}>{formData.id ? "Editar Iglesia" : "Nueva Iglesia"}</h2>
             <form onSubmit={handleSaveChurch} style={{ display: "flex", flexDirection: "column", gap: "15px" }}>
@@ -430,7 +430,7 @@ export default function AdminDashboardClient({ churches, users, normalUsers }: {
       
       {/* Assign Modal Form */}
       {isAssignModalOpen && selectedChurch && (
-        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100 }}>
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 3000 }}>
           <div className="glass-panel" style={{ width: "90%", maxWidth: "500px", padding: "30px", maxHeight: "90vh", overflowY: "auto" }}>
             <h2 style={{ marginBottom: "20px", fontSize: "1.5rem" }}>Asignar Dueño a {selectedChurch.name}</h2>
             
@@ -527,7 +527,7 @@ export default function AdminDashboardClient({ churches, users, normalUsers }: {
       
       {/* Delete Confirmation Modal */}
       {churchToDelete && (
-        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)", backdropFilter: "blur(4px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 300, padding: "20px" }}>
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)", backdropFilter: "blur(4px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 3000, padding: "20px" }}>
           <div className="glass-panel" style={{ width: "100%", maxWidth: "400px", padding: "30px", textAlign: "center" }}>
             <div style={{ fontSize: "3rem", marginBottom: "15px" }}>⚠️</div>
             <h2 style={{ color: "white", fontSize: "1.4rem", fontWeight: 800, marginBottom: "10px" }}>¿Eliminar Iglesia?</h2>
@@ -557,7 +557,7 @@ export default function AdminDashboardClient({ churches, users, normalUsers }: {
       )}
       {/* Delete User Modal */}
       {userToDelete && (
-        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)", backdropFilter: "blur(4px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 300, padding: "20px" }}>
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)", backdropFilter: "blur(4px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 3000, padding: "20px" }}>
           <div className="glass-panel" style={{ width: "100%", maxWidth: "400px", padding: "30px", textAlign: "center" }}>
             <div style={{ fontSize: "3rem", marginBottom: "15px" }}>⚠️</div>
             <h2 style={{ color: "white", fontSize: "1.4rem", fontWeight: 800, marginBottom: "10px" }}>¿Eliminar Usuario?</h2>
@@ -588,7 +588,7 @@ export default function AdminDashboardClient({ churches, users, normalUsers }: {
 
       {/* Edit User Modal */}
       {userToEdit && (
-        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)", backdropFilter: "blur(4px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 300, padding: "20px" }}>
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)", backdropFilter: "blur(4px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 3000, padding: "20px" }}>
           <div className="glass-panel" style={{ width: "100%", maxWidth: "480px", padding: "30px", maxHeight: "90vh", overflowY: "auto" }}>
             <h2 style={{ marginBottom: "20px", fontSize: "1.5rem" }}>Editar Usuario</h2>
             <form onSubmit={handleSaveUserEdit} style={{ display: "flex", flexDirection: "column", gap: "15px" }}>

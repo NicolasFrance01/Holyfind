@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import "leaflet/dist/leaflet.css";
 
 const TYPE_COLORS: Record<string, string> = {
@@ -136,6 +137,9 @@ export default function MapComponent({ churches, targetLocation, onPlacesUpdate,
   
   const [isSearching, setIsSearching] = useState(false);
   const [showSearchButton, setShowSearchButton] = useState(false);
+  const [toastMsg, setToastMsg] = useState<{title: string, text: string, type: "success"|"error"} | null>(null);
+  
+  const router = useRouter();
 
   // ── Overpass search centrado en lat/lng con radio dinámico ──────────────
   const searchOverpass = useCallback(async (map: any, L: any, lat: number, lng: number, radius: number) => {
@@ -230,15 +234,19 @@ out center tags;`;
           body: JSON.stringify({ name, type, address, latitude: lat, longitude: lng })
         });
         if (res.ok) {
-          alert(`¡${name} importada a la base de datos! Refrescá la página para verla como definitiva.`);
+          setToastMsg({ title: "¡Importación Exitosa!", text: `La iglesia ${name} se guardó en la base de datos.`, type: "success" });
+          setTimeout(() => setToastMsg(null), 4000);
+          router.refresh();
         } else {
-          alert("Hubo un error al importar. Verifica que seas admin.");
+          setToastMsg({ title: "Error al importar", text: "Verifica que seas admin.", type: "error" });
+          setTimeout(() => setToastMsg(null), 4000);
         }
       } catch (err) {
-        alert("Error de red al importar");
+        setToastMsg({ title: "Error de red", text: "Hubo un problema de conexión al importar.", type: "error" });
+        setTimeout(() => setToastMsg(null), 4000);
       }
     };
-  }, []);
+  }, [router]);
 
   // ── Init Leaflet map ──────────────────────────────────────────────────────
   useEffect(() => {
@@ -347,6 +355,20 @@ out center tags;`;
 
   return (
     <div style={{ position: "relative", width: "100%", height: "100%" }}>
+      {/* Toast Notification */}
+      {toastMsg && (
+        <div style={{ position: "absolute", top: "20px", left: "50%", transform: "translateX(-50%)", zIndex: 3000, display: "flex", flexDirection: "column", alignItems: "center", pointerEvents: "none" }}>
+          <div className="glass-panel" style={{ padding: "16px 24px", display: "flex", flexDirection: "column", gap: "4px", alignItems: "center", border: toastMsg.type === "success" ? "1px solid rgba(16, 185, 129, 0.4)" : "1px solid rgba(239, 68, 68, 0.4)", background: toastMsg.type === "success" ? "rgba(16, 185, 129, 0.15)" : "rgba(239, 68, 68, 0.15)", borderRadius: "16px", backdropFilter: "blur(24px)", WebkitBackdropFilter: "blur(24px)" }}>
+            <span style={{ fontSize: "1.1rem", fontWeight: 700, color: toastMsg.type === "success" ? "#34d399" : "#f87171" }}>
+              {toastMsg.title}
+            </span>
+            <span style={{ fontSize: "0.95rem", color: "white" }}>
+              {toastMsg.text}
+            </span>
+          </div>
+        </div>
+      )}
+
       {/* Botón de Buscar en esta zona / Spinner */}
       {(showSearchButton || isSearching) && (
         <button 
