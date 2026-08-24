@@ -87,16 +87,16 @@ export default function ChurchDetailModal({ church, onClose, userId, followingCh
   const followerCount = church.followers?.length || 0;
 
   return (
-    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", backdropFilter: "blur(12px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 2000, padding: "16px" }}>
-      <div style={{ width: "100%", maxWidth: "640px", maxHeight: "94vh", background: "#1a1f2c", border: "1px solid rgba(255,255,255,0.15)", boxShadow: "0 25px 50px -12px rgba(0,0,0,0.5)", borderRadius: "20px", overflow: "hidden", display: "flex", flexDirection: "column" }}>
+    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", backdropFilter: "blur(12px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 2000, padding: "16px" }}>
+      <div style={{ width: "100%", maxWidth: "640px", maxHeight: "94vh", background: "rgba(255, 255, 255, 0.03)", border: "1px solid rgba(255,255,255,0.15)", boxShadow: "0 25px 50px -12px rgba(0,0,0,0.5)", borderRadius: "20px", overflow: "hidden", display: "flex", flexDirection: "column", backdropFilter: "blur(24px)", WebkitBackdropFilter: "blur(24px)" }}>
         <div style={{ flex: 1, overflowY: "auto" }}>
           {/* Hero */}
           <div style={{ position: "relative" }}>
             <div style={{ width: "100%", height: "100px", background: "linear-gradient(135deg, rgba(99,102,241,0.2), rgba(168,85,247,0.2))", borderRadius: "20px 20px 0 0" }}></div>
             {church.imageUrl ? (
-              <img src={church.imageUrl} alt={church.name} style={{ width: "84px", height: "84px", objectFit: "cover", borderRadius: "50%", position: "absolute", bottom: "-36px", left: "24px", border: "4px solid #1a1f2c", background: "#1a1f2c" }} />
+              <img src={church.imageUrl} alt={church.name} style={{ width: "84px", height: "84px", objectFit: "cover", borderRadius: "50%", position: "absolute", bottom: "-36px", left: "24px", border: "4px solid rgba(26,31,44,0.5)", background: "rgba(26,31,44,0.8)", backdropFilter: "blur(8px)" }} />
             ) : (
-              <div style={{ width: "84px", height: "84px", borderRadius: "50%", position: "absolute", bottom: "-36px", left: "24px", border: "4px solid #1a1f2c", background: "linear-gradient(135deg, #4f46e5, #a855f7)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "2rem" }}>⛪</div>
+              <div style={{ width: "84px", height: "84px", borderRadius: "50%", position: "absolute", bottom: "-36px", left: "24px", border: "4px solid rgba(26,31,44,0.5)", background: "linear-gradient(135deg, rgba(79,70,229,0.8), rgba(168,85,247,0.8))", backdropFilter: "blur(8px)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "2rem" }}>⛪</div>
             )}
             <button onClick={onClose} style={{ position: "absolute", top: "12px", right: "12px", background: "rgba(0,0,0,0.6)", border: "none", color: "white", borderRadius: "50%", width: "32px", height: "32px", cursor: "pointer", fontSize: "1.1rem", display: "flex", alignItems: "center", justifyContent: "center" }}>×</button>
           </div>

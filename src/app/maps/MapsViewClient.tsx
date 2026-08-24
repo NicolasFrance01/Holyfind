@@ -48,6 +48,7 @@ export default function MapsViewClient({ initialChurches }: { initialChurches: C
 
   // Add Church Modal
   const [showAddModal, setShowAddModal] = useState(false);
+  const [addSuccess, setAddSuccess] = useState(false);
 
   // Detail Modal & Events Panel
   const [detailModalChurch, setDetailModalChurch] = useState<any>(null);
@@ -396,33 +397,33 @@ export default function MapsViewClient({ initialChurches }: { initialChurches: C
         <button 
           onClick={() => setShowEventsPanel(true)}
           style={{
-            background: "linear-gradient(135deg, #4f46e5, #ec4899)", color: "white",
-            border: "none", borderRadius: "99px", padding: "12px 20px",
+            background: "rgba(255, 255, 255, 0.1)", color: "white",
+            border: "1px solid rgba(255, 255, 255, 0.2)", borderRadius: "99px", padding: "12px 20px",
             fontSize: "0.95rem", fontWeight: 700, cursor: "pointer",
-            boxShadow: "0 10px 25px rgba(236, 72, 153, 0.4)",
+            boxShadow: "0 8px 32px rgba(0, 0, 0, 0.3)", backdropFilter: "blur(12px)",
             display: "flex", alignItems: "center", gap: "8px",
-            transition: "transform 0.2s"
+            transition: "transform 0.2s, background 0.2s"
           }}
-          onMouseEnter={e => e.currentTarget.style.transform = "scale(1.05)"}
-          onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}
+          onMouseEnter={e => { e.currentTarget.style.transform = "scale(1.05)"; e.currentTarget.style.background = "rgba(255, 255, 255, 0.2)"; }}
+          onMouseLeave={e => { e.currentTarget.style.transform = "scale(1)"; e.currentTarget.style.background = "rgba(255, 255, 255, 0.1)"; }}
         >
           <span>📅</span> Ver Próximos Eventos
         </button>
 
         <button 
-          onClick={() => setShowAddModal(true)}
+          onClick={() => { setShowAddModal(true); setAddSuccess(false); }}
           style={{
-            background: "linear-gradient(135deg, #10b981, #059669)", color: "white",
-            border: "none", borderRadius: "99px", padding: "12px 20px",
+            background: "linear-gradient(135deg, rgba(168, 85, 247, 0.2), rgba(99, 102, 241, 0.2))", color: "white",
+            border: "1px solid rgba(168, 85, 247, 0.4)", borderRadius: "99px", padding: "12px 20px",
             fontSize: "0.95rem", fontWeight: 700, cursor: "pointer",
-            boxShadow: "0 10px 25px rgba(16, 185, 129, 0.4)",
+            boxShadow: "0 8px 32px rgba(0, 0, 0, 0.3)", backdropFilter: "blur(12px)",
             display: "flex", alignItems: "center", gap: "8px",
-            transition: "transform 0.2s"
+            transition: "transform 0.2s, background 0.2s"
           }}
-          onMouseEnter={e => e.currentTarget.style.transform = "scale(1.05)"}
-          onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}
+          onMouseEnter={e => { e.currentTarget.style.transform = "scale(1.05)"; e.currentTarget.style.background = "linear-gradient(135deg, rgba(168, 85, 247, 0.4), rgba(99, 102, 241, 0.4))"; }}
+          onMouseLeave={e => { e.currentTarget.style.transform = "scale(1)"; e.currentTarget.style.background = "linear-gradient(135deg, rgba(168, 85, 247, 0.2), rgba(99, 102, 241, 0.2))"; }}
         >
-          <span>➕</span> ¿Falta tu iglesia?
+          <span>➕</span> ¿Falta tu congregación?
         </button>
       </div>
 
@@ -430,14 +431,14 @@ export default function MapsViewClient({ initialChurches }: { initialChurches: C
       {showAddModal && (
         <div style={{
           position: "fixed", inset: 0, zIndex: 1000,
-          background: "rgba(0,0,0,0.7)", backdropFilter: "blur(5px)",
+          background: "rgba(0,0,0,0.6)", backdropFilter: "blur(12px)",
           display: "flex", alignItems: "center", justifyContent: "center", padding: "20px"
         }}>
           <div style={{
-            background: "var(--surface)", border: "1px solid var(--glass-border)",
+            background: "rgba(255, 255, 255, 0.03)", border: "1px solid rgba(255, 255, 255, 0.1)",
             borderRadius: "24px", padding: "30px", maxWidth: "500px", width: "100%",
             boxShadow: "0 25px 50px rgba(0,0,0,0.5)", position: "relative",
-            maxHeight: "90vh", overflowY: "auto"
+            maxHeight: "90vh", overflowY: "auto", backdropFilter: "blur(16px)"
           }}>
             <button 
               onClick={() => setShowAddModal(false)}
@@ -446,40 +447,56 @@ export default function MapsViewClient({ initialChurches }: { initialChurches: C
                 border: "none", color: "var(--text-secondary)", fontSize: "1.5rem", cursor: "pointer"
               }}
             >×</button>
-            <h2 style={{ fontSize: "1.5rem", fontWeight: 800, marginBottom: "15px", color: "white" }}>¡Sumá tu iglesia al mapa!</h2>
-            <p style={{ color: "var(--text-secondary)", fontSize: "0.95rem", lineHeight: 1.5, marginBottom: "25px" }}>
-              Si querés que tu iglesia figure en el mapa, completá el formulario y nuestro soporte se pondrá en contacto con vos a la brevedad.
-            </p>
+            
+            {addSuccess ? (
+              <div style={{ textAlign: "center", padding: "20px 0" }}>
+                <div style={{ fontSize: "4rem", marginBottom: "16px" }}>✨</div>
+                <h2 style={{ fontSize: "1.5rem", fontWeight: 800, marginBottom: "15px", color: "white" }}>¡Gracias!</h2>
+                <p style={{ color: "var(--text-secondary)", fontSize: "0.95rem", lineHeight: 1.5, marginBottom: "25px" }}>
+                  Hemos recibido tu solicitud. Nos contactaremos a la brevedad para validar y publicar la congregación.
+                </p>
+                <button onClick={() => setShowAddModal(false)} style={{
+                  background: "rgba(255,255,255,0.1)", color: "white", border: "1px solid rgba(255,255,255,0.2)",
+                  padding: "12px 24px", borderRadius: "12px", fontWeight: 700, cursor: "pointer", backdropFilter: "blur(8px)"
+                }}>Cerrar</button>
+              </div>
+            ) : (
+              <>
+                <h2 style={{ fontSize: "1.5rem", fontWeight: 800, marginBottom: "15px", color: "white" }}>¡Sumá tu congregación al mapa!</h2>
+                <p style={{ color: "var(--text-secondary)", fontSize: "0.95rem", lineHeight: 1.5, marginBottom: "25px" }}>
+                  Si querés que tu congregación figure en el mapa, completá el formulario y nuestro soporte se pondrá en contacto con vos a la brevedad.
+                </p>
 
-            <form onSubmit={(e) => {
-              e.preventDefault();
-              alert("¡Gracias! Hemos recibido tu solicitud. Nos contactaremos a la brevedad.");
-              setShowAddModal(false);
-            }}>
-              <div style={{ marginBottom: "15px" }}>
-                <label style={{ display: "block", fontSize: "0.85rem", color: "var(--text-secondary)", marginBottom: "6px" }}>Nombre de la iglesia *</label>
-                <input type="text" required placeholder="Ej: Iglesia Bautista Emmanuel" style={{ width: "100%", padding: "12px", borderRadius: "10px", border: "1px solid var(--border)", background: "rgba(255,255,255,0.05)", color: "white" }} />
-              </div>
-              <div style={{ marginBottom: "15px" }}>
-                <label style={{ display: "block", fontSize: "0.85rem", color: "var(--text-secondary)", marginBottom: "6px" }}>Dirección exacta o Ciudad *</label>
-                <input type="text" required placeholder="Ej: Av. San Martín 1234, Córdoba" style={{ width: "100%", padding: "12px", borderRadius: "10px", border: "1px solid var(--border)", background: "rgba(255,255,255,0.05)", color: "white" }} />
-              </div>
-              <div style={{ marginBottom: "15px" }}>
-                <label style={{ display: "block", fontSize: "0.85rem", color: "var(--text-secondary)", marginBottom: "6px" }}>Teléfono de contacto *</label>
-                <input type="tel" required placeholder="Ej: +54 9 351 1234567" style={{ width: "100%", padding: "12px", borderRadius: "10px", border: "1px solid var(--border)", background: "rgba(255,255,255,0.05)", color: "white" }} />
-              </div>
-              <div style={{ marginBottom: "20px" }}>
-                <label style={{ display: "block", fontSize: "0.85rem", color: "var(--text-secondary)", marginBottom: "6px" }}>Correo electrónico *</label>
-                <input type="email" required placeholder="Ej: contacto@iglesia.com" style={{ width: "100%", padding: "12px", borderRadius: "10px", border: "1px solid var(--border)", background: "rgba(255,255,255,0.05)", color: "white" }} />
-              </div>
-              <button type="submit" style={{
-                width: "100%", background: "#4f46e5", color: "white", border: "none",
-                padding: "14px", borderRadius: "12px", fontWeight: 700, cursor: "pointer",
-                boxShadow: "0 4px 15px rgba(79, 70, 229, 0.3)"
-              }}>
-                Enviar solicitud a Holyfind
-              </button>
-            </form>
+                <form onSubmit={(e) => {
+                  e.preventDefault();
+                  setAddSuccess(true);
+                }}>
+                  <div style={{ marginBottom: "15px" }}>
+                    <label style={{ display: "block", fontSize: "0.85rem", color: "var(--text-secondary)", marginBottom: "6px" }}>Nombre de la congregación *</label>
+                    <input type="text" required placeholder="Ej: Iglesia Bautista Emmanuel" style={{ width: "100%", padding: "12px", borderRadius: "10px", border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "white" }} />
+                  </div>
+                  <div style={{ marginBottom: "15px" }}>
+                    <label style={{ display: "block", fontSize: "0.85rem", color: "var(--text-secondary)", marginBottom: "6px" }}>Dirección exacta o Ciudad *</label>
+                    <input type="text" required placeholder="Ej: Av. San Martín 1234, Córdoba" style={{ width: "100%", padding: "12px", borderRadius: "10px", border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "white" }} />
+                  </div>
+                  <div style={{ marginBottom: "15px" }}>
+                    <label style={{ display: "block", fontSize: "0.85rem", color: "var(--text-secondary)", marginBottom: "6px" }}>Teléfono de contacto *</label>
+                    <input type="tel" required placeholder="Ej: +54 9 351 1234567" style={{ width: "100%", padding: "12px", borderRadius: "10px", border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "white" }} />
+                  </div>
+                  <div style={{ marginBottom: "20px" }}>
+                    <label style={{ display: "block", fontSize: "0.85rem", color: "var(--text-secondary)", marginBottom: "6px" }}>Correo electrónico *</label>
+                    <input type="email" required placeholder="Ej: contacto@iglesia.com" style={{ width: "100%", padding: "12px", borderRadius: "10px", border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "white" }} />
+                  </div>
+                  <button type="submit" style={{
+                    width: "100%", background: "rgba(79, 70, 229, 0.4)", color: "white", border: "1px solid rgba(79, 70, 229, 0.6)",
+                    padding: "14px", borderRadius: "12px", fontWeight: 700, cursor: "pointer",
+                    boxShadow: "0 4px 15px rgba(79, 70, 229, 0.2)", backdropFilter: "blur(8px)", transition: "background 0.2s"
+                  }} onMouseEnter={e => e.currentTarget.style.background = "rgba(79, 70, 229, 0.6)"} onMouseLeave={e => e.currentTarget.style.background = "rgba(79, 70, 229, 0.4)"}>
+                    Enviar solicitud a Holyfind
+                  </button>
+                </form>
+              </>
+            )}
           </div>
         </div>
       )}

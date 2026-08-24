@@ -29,8 +29,14 @@ export default async function ChurchDashboardPage() {
     include: {
       church: {
         include: {
-          events: { orderBy: { eventDate: "asc" } },
-          activities: { orderBy: { createdAt: "desc" } },
+          events: { 
+            include: { likes: true, saves: true }, 
+            orderBy: { eventDate: "asc" } 
+          },
+          activities: { 
+            include: { likes: true, saves: true }, 
+            orderBy: { createdAt: "desc" } 
+          },
           comments: {
             include: { user: { select: { name: true, profileImage: true } } },
             orderBy: { createdAt: "desc" }
