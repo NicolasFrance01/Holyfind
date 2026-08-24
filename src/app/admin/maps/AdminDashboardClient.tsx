@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import Link from "next/link";
-import { toggleUserStatus, deleteChurch, assignChurchManager, removeChurchManager } from "../actions";
+import { toggleUserStatus, deleteChurch, deleteUser, assignChurchManager, removeChurchManager } from "../actions";
 import { saveChurch } from "@/app/admin/actions";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
@@ -27,7 +27,7 @@ const defaultForm: ChurchFormData = {
   name: "", address: "", type: "Católica", latitude: null, longitude: null, description: ""
 };
 
-export default function AdminDashboardClient({ churches, users }: { churches: any[], users: any[] }) {
+export default function AdminDashboardClient({ churches, users, normalUsers }: { churches: any[], users: any[], normalUsers?: any[] }) {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState("iglesias");
   const [isPending, startTransition] = useTransition();
@@ -36,6 +36,7 @@ export default function AdminDashboardClient({ churches, users }: { churches: an
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
   const [selectedChurch, setSelectedChurch] = useState<any>(null);
   const [churchToDelete, setChurchToDelete] = useState<any>(null);
+  const [userToDelete, setUserToDelete] = useState<any>(null);
   const [formData, setFormData] = useState<ChurchFormData>(defaultForm);
   const [isCreateUserOpen, setIsCreateUserOpen] = useState(false);
   const [userCreateMsg, setUserCreateMsg] = useState<{ text: string; ok: boolean } | null>(null);
@@ -57,6 +58,15 @@ export default function AdminDashboardClient({ churches, users }: { churches: an
       startTransition(() => {
         deleteChurch(churchToDelete.id);
         setChurchToDelete(null);
+      });
+    }
+  };
+
+  const confirmDeleteUser = () => {
+    if (userToDelete) {
+      startTransition(() => {
+        deleteUser(userToDelete.id);
+        setUserToDelete(null);
       });
     }
   };
@@ -114,6 +124,13 @@ export default function AdminDashboardClient({ churches, users }: { churches: an
               onClick={() => setActiveTab("usuarios")}
             >
               Gestión de Clientes
+            </button>
+            <button 
+              className={`btn-secondary ${activeTab === "normal_users" ? "active" : ""}`} 
+              style={activeTab === "normal_users" ? { background: "var(--primary-color)", borderColor: "var(--primary-color)", color: "white" } : {}}
+              onClick={() => setActiveTab("normal_users")}
+            >
+              Gestión de Usuarios
             </button>
           </div>
 
@@ -229,6 +246,72 @@ export default function AdminDashboardClient({ churches, users }: { churches: an
                             >
                               {u.isActive ? "Suspender" : "Restaurar"}
                             </button>
+                            <button className="btn-secondary" style={{ padding: "4px 10px", fontSize: "0.8rem", color: "#ef4444", borderColor: "rgba(239, 68, 68, 0.5)" }} onClick={() => setUserToDelete(u)}>Eliminar</button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          )}
+
+          {activeTab === "normal_users" && normalUsers && (
+            <div className="glass-panel" style={{ padding: "30px" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "20px", alignItems: "center" }}>
+                <h2 style={{ fontSize: "1.8rem" }}>Usuarios Comunes</h2>
+                <button className="btn-primary" style={{ padding: "8px 16px", fontSize: "0.9rem" }} onClick={() => {
+                  /* Optional: could open a create user modal with role USER, but users register themselves usually */
+                  alert("Los usuarios comunes se registran directamente desde la app. Podés eliminarlos o suspenderlos desde acá.");
+                }}>Info</button>
+              </div>
+
+              {normalUsers.length === 0 ? (
+                <p style={{ color: "var(--text-secondary)" }}>No hay usuarios registrados.</p>
+              ) : (
+                <div style={{ overflowX: "auto" }}>
+                  <table style={{ width: "100%", borderCollapse: "collapse", color: "white", minWidth: "600px" }}>
+                    <thead>
+                      <tr style={{ borderBottom: "1px solid var(--glass-border)", textAlign: "left" }}>
+                        <th style={{ padding: "12px" }}>Nombre</th>
+                        <th style={{ padding: "12px" }}>Email</th>
+                        <th style={{ padding: "12px" }}>Teléfono</th>
+                        <th style={{ padding: "12px" }}>Estado</th>
+                        <th style={{ padding: "12px" }}>Acciones</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {normalUsers.map(u => (
+                        <tr key={u.id} style={{ borderBottom: "1px solid var(--glass-border)" }}>
+                          <td style={{ padding: "12px", fontWeight: 600 }}>{u.name || <span style={{ color: "var(--text-secondary)", fontStyle: "italic" }}>Sin nombre</span>}</td>
+                          <td style={{ padding: "12px", color: "var(--text-secondary)", fontSize: "0.9rem" }}>{u.email}</td>
+                          <td style={{ padding: "12px", fontSize: "0.9rem", color: "var(--text-secondary)" }}>{u.phone || "-"}</td>
+                          <td style={{ padding: "12px" }}>
+                            {!u.isActive ? (
+                              <span style={{ padding: "4px 8px", borderRadius: "4px", fontSize: "0.8rem", background: "rgba(239, 68, 68, 0.2)", color: "#ef4444" }}>
+                                Suspendido
+                              </span>
+                            ) : !u.emailConfirmed ? (
+                              <span style={{ padding: "4px 8px", borderRadius: "4px", fontSize: "0.8rem", background: "rgba(251, 191, 36, 0.2)", color: "#fbbf24" }}>
+                                ⏳ Pendiente
+                              </span>
+                            ) : (
+                              <span style={{ padding: "4px 8px", borderRadius: "4px", fontSize: "0.8rem", background: "rgba(52, 211, 153, 0.2)", color: "#34d399" }}>
+                                ✅ Confirmado
+                              </span>
+                            )}
+                          </td>
+                          <td style={{ padding: "12px", display: "flex", gap: "10px" }}>
+                            <button 
+                              className="btn-secondary" 
+                              style={{ padding: "4px 10px", fontSize: "0.8rem", color: u.isActive ? "#ef4444" : "#34d399", borderColor: u.isActive ? "rgba(239, 68, 68, 0.5)" : "rgba(52, 211, 153, 0.5)" }}
+                              onClick={() => handleToggleUser(u.id, u.isActive)}
+                              disabled={isPending}
+                            >
+                              {u.isActive ? "Suspender" : "Restaurar"}
+                            </button>
+                            <button className="btn-secondary" style={{ padding: "4px 10px", fontSize: "0.8rem", color: "#ef4444", borderColor: "rgba(239, 68, 68, 0.5)" }} onClick={() => setUserToDelete(u)}>Eliminar</button>
                           </td>
                         </tr>
                       ))}
@@ -437,6 +520,36 @@ export default function AdminDashboardClient({ churches, users }: { churches: an
                 className="btn-primary" 
                 style={{ flex: 1, padding: "12px", background: "#ef4444", borderColor: "#ef4444", color: "white" }}
                 onClick={confirmDeleteChurch}
+                disabled={isPending}
+              >
+                {isPending ? "Eliminando..." : "Sí, Eliminar"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Delete User Modal */}
+      {userToDelete && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)", backdropFilter: "blur(4px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 300, padding: "20px" }}>
+          <div className="glass-panel" style={{ width: "100%", maxWidth: "400px", padding: "30px", textAlign: "center" }}>
+            <div style={{ fontSize: "3rem", marginBottom: "15px" }}>⚠️</div>
+            <h2 style={{ color: "white", fontSize: "1.4rem", fontWeight: 800, marginBottom: "10px" }}>¿Eliminar Usuario?</h2>
+            <p style={{ color: "var(--text-secondary)", fontSize: "0.95rem", marginBottom: "25px", lineHeight: 1.5 }}>
+              Estás a punto de eliminar a <strong>{userToDelete.email}</strong>. Esta acción no se puede deshacer. ¿Estás seguro?
+            </p>
+            <div style={{ display: "flex", gap: "12px" }}>
+              <button 
+                className="btn-secondary" 
+                style={{ flex: 1, padding: "12px" }}
+                onClick={() => setUserToDelete(null)}
+                disabled={isPending}
+              >
+                Cancelar
+              </button>
+              <button 
+                className="btn-primary" 
+                style={{ flex: 1, padding: "12px", background: "#ef4444", borderColor: "#ef4444", color: "white" }}
+                onClick={confirmDeleteUser}
                 disabled={isPending}
               >
                 {isPending ? "Eliminando..." : "Sí, Eliminar"}

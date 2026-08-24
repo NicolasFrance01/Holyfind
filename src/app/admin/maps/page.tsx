@@ -26,7 +26,13 @@ export default async function AdminMapsPage() {
     orderBy: { createdAt: "desc" },
   });
 
+  const normalUsers = await prisma.user.findMany({
+    where: { role: "USER" },
+    select: { id: true, email: true, name: true, phone: true, isActive: true, emailConfirmed: true, createdAt: true },
+    orderBy: { createdAt: "desc" },
+  });
+
   return (
-    <AdminDashboardClient churches={churches} users={users} />
+    <AdminDashboardClient churches={churches} users={users} normalUsers={normalUsers} />
   );
 }

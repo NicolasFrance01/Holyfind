@@ -16,6 +16,18 @@ export async function toggleUserStatus(userId: string, currentStatus: boolean) {
   }
 }
 
+export async function deleteUser(userId: string) {
+  try {
+    await prisma.user.delete({
+      where: { id: userId },
+    });
+    revalidatePath("/admin/maps");
+    return { success: true };
+  } catch (error) {
+    return { error: "Failed to delete user" };
+  }
+}
+
 export async function deleteChurch(churchId: string) {
   try {
     await prisma.church.delete({
