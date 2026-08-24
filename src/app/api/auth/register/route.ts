@@ -5,7 +5,7 @@ import nodemailer from "nodemailer";
 
 export async function POST(req: Request) {
   try {
-    const { name, email, password } = await req.json();
+    const { name, email, password, phone, recoveryEmail } = await req.json();
 
     if (!name || !email || !password) {
       return NextResponse.json({ error: "Faltan campos obligatorios" }, { status: 400 });
@@ -24,6 +24,8 @@ export async function POST(req: Request) {
         name,
         email,
         password: hashedPassword,
+        phone: phone || null,
+        recoveryEmail: recoveryEmail || null,
         role: "USER",
         isActive: true,
         emailConfirmed: true, // We auto-confirm for now since they are creating their own account

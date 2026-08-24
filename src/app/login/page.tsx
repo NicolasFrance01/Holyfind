@@ -19,6 +19,8 @@ function LoginForm() {
   const searchParams = useSearchParams();
   const [isRegistering, setIsRegistering] = useState(false);
   const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [recoveryEmail, setRecoveryEmail] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -44,7 +46,7 @@ function LoginForm() {
         const res = await fetch("/api/auth/register", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ name, email, password })
+          body: JSON.stringify({ name, email, password, phone, recoveryEmail })
         });
         const data = await res.json();
         
@@ -130,18 +132,43 @@ function LoginForm() {
           )}
 
           {isRegistering && (
-            <div className="form-group" style={{ marginBottom: "12px" }}>
-              <label className="form-label">Nombre Completo</label>
-              <input
-                type="text"
-                required
-                className="form-input"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="Ej: Juan Pérez"
-                autoComplete="name"
-              />
-            </div>
+            <>
+              <div className="form-group" style={{ marginBottom: "12px" }}>
+                <label className="form-label">Nombre Completo</label>
+                <input
+                  type="text"
+                  required
+                  className="form-input"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="Ej: Juan Pérez"
+                  autoComplete="name"
+                />
+              </div>
+
+              <div className="form-group" style={{ marginBottom: "12px" }}>
+                <label className="form-label">Teléfono (opcional)</label>
+                <input
+                  type="text"
+                  className="form-input"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  placeholder="Ej: +54 9 11 1234 5678"
+                  autoComplete="tel"
+                />
+              </div>
+
+              <div className="form-group" style={{ marginBottom: "12px" }}>
+                <label className="form-label">Email de recuperación (opcional)</label>
+                <input
+                  type="email"
+                  className="form-input"
+                  value={recoveryEmail}
+                  onChange={(e) => setRecoveryEmail(e.target.value.trim())}
+                  placeholder="Ej: otro@email.com"
+                />
+              </div>
+            </>
           )}
 
           <div className="form-group">
@@ -151,7 +178,7 @@ function LoginForm() {
               required
               className="form-input"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={(e) => setEmail(e.target.value.trim())}
               placeholder="Ingresa tu email o usuario"
               autoComplete="email"
             />
@@ -192,6 +219,7 @@ function LoginForm() {
             setError("");
             setSuccessMsg("");
           }}
+          type="button"
           style={{ width: "100%", padding: "12px", fontSize: "0.95rem", borderRadius: "12px", border: "1px solid var(--border)", background: "white", color: "#334155", fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "10px", transition: "background 0.2s" }}
           onMouseEnter={e => e.currentTarget.style.background = "#f1f5f9"}
           onMouseLeave={e => e.currentTarget.style.background = "white"}
