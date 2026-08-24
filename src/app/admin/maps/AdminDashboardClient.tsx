@@ -11,7 +11,7 @@ import { useRouter } from "next/navigation";
 const MapComponent = dynamic(() => import("@/components/MapComponent"), {
   ssr: false,
   loading: () => <div style={{ height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}>Cargando mapa...</div>
-});
+}) as any;
 
 type ChurchFormData = {
   id?: string;
@@ -357,7 +357,7 @@ export default function AdminDashboardClient({ churches, users, normalUsers }: {
           <MapComponent 
             churches={churches} 
             isAdmin={true}
-            onMapClick={(lat, lng) => {
+            onMapClick={(lat: number, lng: number) => {
               if (isPickingLocation) {
                 setFormData(prev => ({ ...prev, latitude: lat, longitude: lng }));
                 setIsPickingLocation(false);

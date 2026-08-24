@@ -45,6 +45,7 @@ type Props = {
   selectedChurchId?: string | null;
   onPlacesUpdate?: (places: Church[]) => void;
   isAdmin?: boolean;
+  onMapClick?: (lat: number, lng: number) => void;
 };
 
 function buildPopupHTML(name: string, type: string, address: string, lat: number, lng: number, isDB: boolean = false, isAdmin: boolean = false, events: any[] = [], church?: Partial<Church>): string {
@@ -127,7 +128,7 @@ function radiusForZoom(zoom: number): number {
   return 25000;
 }
 
-export default function MapComponent({ churches, targetLocation, onPlacesUpdate, isAdmin = false }: Props) {
+export default function MapComponent({ churches, targetLocation, onPlacesUpdate, isAdmin = false, onMapClick }: Props) {
   const mapDivRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<any>(null);
   const userMarkerRef = useRef<any>(null);
@@ -279,6 +280,12 @@ out center tags;`;
     map.on("zoomend", () => {
       setShowSearchButton(true);
     });
+    
+    if (onMapClick) {
+      map.on("click", (e: any) => {
+        onMapClick(e.latlng.lat, e.latlng.lng);
+      });
+    }
 
     // ── Geolocalización inicial ─────────────────────────────────────────────
     navigator.geolocation.getCurrentPosition(
