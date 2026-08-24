@@ -89,6 +89,10 @@ export default function MapsViewClient({ initialChurches }: { initialChurches: C
     }
   };
 
+  useEffect(() => {
+    (window as any).openChurchDetail = openChurchDetail;
+  }, []);
+
   const filters = ["Todas", "Católica", "Cristiana Evangélica", "Cristiana", "Islam", "Judaísmo", "Otro"];
 
   // Auto-Geolocation on load

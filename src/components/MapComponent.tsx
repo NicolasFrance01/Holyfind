@@ -72,6 +72,8 @@ function buildPopupHTML(name: string, type: string, address: string, lat: number
   }
   const socialsHtml = socials.length > 0 ? `<div style="display:flex;flex-wrap:wrap;gap:5px;margin:8px 0;">${socials.join('')}</div>` : '';
 
+  const detailBtn = isDB ? `<button onclick="window.openChurchDetail('${church?.id}')" style="margin-top: 8px; width: 100%; padding: 8px; background: rgba(99,102,241,0.1); color: #818cf8; border: 1px solid rgba(99,102,241,0.3); border-radius: 8px; font-size: 0.85rem; font-weight: 700; cursor: pointer;">👀 Ver Detalle de la Iglesia</button>` : '';
+
   const importBtn = (isAdmin && !isDB) ? 
     `<button onclick="window.importOsmChurchToDB('${name.replace(/'/g, "\\'")}'  , '${type}', '${address.replace(/'/g, "\\'")}'  , ${lat}, ${lng})" style="margin-top: 8px; width: 100%; padding: 6px; background: #10b981; color: white; border: none; border-radius: 8px; font-size: 0.8rem; font-weight: 600; cursor: pointer;">⬇️ Importar a DB (Admin)</button>` : '';
 
@@ -85,6 +87,7 @@ function buildPopupHTML(name: string, type: string, address: string, lat: number
       <p style="margin:0 0 8px;font-size:0.82rem;color:#64748b;">📍 ${address}</p>
       ${eventsHtml}
       ${socialsHtml}
+      ${detailBtn}
       <a href="https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}" target="_blank" rel="noopener noreferrer"
         style="display:flex;align-items:center;justify-content:center;gap:6px;background:#4f46e5;color:white;text-decoration:none;padding:8px;border-radius:10px;font-size:0.85rem;font-weight:600;width:100%;margin-top:6px;">
         🧭 Cómo llegar
