@@ -121,10 +121,10 @@ export default function ChurchDetailModal({ church, onClose, userId, followingCh
               </div>
             </div>
 
-          {/* Follow + Directions */}
-          <div style={{ display: "flex", gap: "8px", marginBottom: "18px" }}>
+          {/* Follow + Directions + Donations */}
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", marginBottom: "18px" }}>
             <button onClick={doFollow} disabled={isPending} style={{
-              flex: 1, padding: "10px", borderRadius: "10px", border: "1px solid", cursor: "pointer", fontWeight: 700, fontSize: "0.88rem", transition: "all 0.2s",
+              flex: 1, minWidth: "120px", padding: "10px", borderRadius: "10px", border: "1px solid", cursor: "pointer", fontWeight: 700, fontSize: "0.88rem", transition: "all 0.2s",
               background: isFollowing ? "rgba(99,102,241,0.25)" : "transparent",
               color: isFollowing ? "#818cf8" : "var(--text-secondary)",
               borderColor: isFollowing ? "rgba(99,102,241,0.5)" : "var(--border)"
@@ -132,7 +132,10 @@ export default function ChurchDetailModal({ church, onClose, userId, followingCh
               {isFollowing ? "🔔 Siguiendo" : "🔕 Seguir"}
             </button>
             {church.latitude && church.longitude && (
-              <a href={`https://www.google.com/maps/dir/?api=1&destination=${church.latitude},${church.longitude}`} target="_blank" rel="noopener" style={{ flex: 1, padding: "10px", borderRadius: "10px", background: "#4f46e5", color: "white", textDecoration: "none", textAlign: "center", fontWeight: 700, fontSize: "0.88rem" }}>🧭 Cómo Llegar</a>
+              <a href={`https://www.google.com/maps/dir/?api=1&destination=${church.latitude},${church.longitude}`} target="_blank" rel="noopener" style={{ flex: 1, minWidth: "120px", padding: "10px", borderRadius: "10px", background: "#4f46e5", color: "white", textDecoration: "none", textAlign: "center", fontWeight: 700, fontSize: "0.88rem" }}>🧭 Cómo Llegar</a>
+            )}
+            {church.donationUrl && (
+              <a href={church.donationUrl} target="_blank" rel="noopener" style={{ flex: 1, minWidth: "120px", padding: "10px", borderRadius: "10px", background: "linear-gradient(135deg, #0ea5e9, #3b82f6)", color: "white", textDecoration: "none", textAlign: "center", fontWeight: 700, fontSize: "0.88rem", border: "1px solid rgba(56,189,248,0.5)", boxShadow: "0 4px 12px rgba(14, 165, 233, 0.2)" }}>💳 Donar / Ofrendar</a>
             )}
           </div>
 

@@ -21,6 +21,7 @@ type Church = {
   imageUrl: string | null;
   phone: string | null;
   website: string | null;
+  donationUrl: string | null;
   events: any[];
 };
 
@@ -58,6 +59,7 @@ export default function DashboardClient({
       imageUrl: c.imageUrl || "",
       phone: c.phone || "",
       website: c.website || "",
+      donationUrl: c.donationUrl || "",
     });
   };
 
@@ -253,6 +255,15 @@ export default function DashboardClient({
                         <label className="form-label">Sitio Web</label>
                         <input className="form-input" type="url" value={profileForm.website} onChange={e => setProfileForm({ ...profileForm, website: e.target.value })} placeholder="https://mi-iglesia.com" />
                       </div>
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label" style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                        <span style={{ color: "#38bdf8" }}>💳</span> Link de Donaciones / Ofrendas
+                      </label>
+                      <input className="form-input" type="url" value={profileForm.donationUrl} onChange={e => setProfileForm({ ...profileForm, donationUrl: e.target.value })} placeholder="https://link.mercadopago.com/..." style={{ borderColor: "rgba(56, 189, 248, 0.4)", background: "rgba(56, 189, 248, 0.05)" }} />
+                      <p style={{ color: "var(--text-secondary)", fontSize: "0.8rem", marginTop: "4px" }}>
+                        Los usuarios verán un botón destacado en tu perfil para aportar ofrendas directamente a este link.
+                      </p>
                     </div>
                     <div style={{ display: "flex", justifyContent: "flex-end", paddingTop: "10px" }}>
                       <button type="submit" className="btn-primary" disabled={isPending} style={{ padding: "12px 28px" }}>

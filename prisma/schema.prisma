@@ -68,6 +68,13 @@ model User {
   savedActivities  ActivitySave[]
   likedActivities  ActivityLike[]
   comments         Comment[]
+
+  // Engagement
+  prayerRequests   PrayerRequest[]
+  forumTopics      ForumTopic[]
+  forumComments    ForumComment[]
+  forumReports     ForumReport[]
+  notifications    Notification[]
 }
 
 // ─── Church ──────────────────────────────────────────────────────────────────
@@ -87,16 +94,21 @@ model Church {
   youtube     String?
   facebook    String?
   whatsapp    String?
+  donationUrl String?   // Link de MercadoPago o similar
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   managers    ChurchManager[]
   authorized  ChurchAuthorized[]
-  events      Event[]
+  events      Event[]        @relation("EventCreator")
+  coHostedEvents Event[]     @relation("EventCoHosts")
   activities  Activity[]
   followers   ChurchFollow[]
   comments    Comment[]
   stats       ChurchStat[]
+  prayerRequests PrayerRequest[]
+  forumTopics    ForumTopic[]
+  devotionals    Devotional[]
 }
 
 model ChurchManager {
@@ -155,11 +167,12 @@ model Event {
   notes         String?
   isPublic      Boolean   @default(true)
   churchId      String
-  jointChurches Json?     // [{id?, name, isOsm?}]
+  jointChurches Json?     // Legacy manual joint churches
+  coHostChurches Church[] @relation("EventCoHosts")
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
-  church        Church    @relation(fields: [churchId], references: [id], onDelete: Cascade)
+  church        Church    @relation("EventCreator", fields: [churchId], references: [id], onDelete: Cascade)
 
   media EventMedia[]
   saves EventSave[]
@@ -268,4 +281,78 @@ model CommentMedia {
   url       String
   type      String  // "image" | "video_url"
   comment   Comment @relation(fields: [commentId], references: [id], onDelete: Cascade)
+}
+
+// ─── Engagement & Community ─────────────────────────────────────────────────
+
+model PrayerRequest {
+  id          String   @id @default(uuid())
+  churchId    String
+  content     String
+  isAnonymous Boolean  @default(false)
+  userId      String?
+  createdAt   DateTime @default(now())
+
+  church      Church   @relation(fields: [churchId], references: [id], onDelete: Cascade)
+  user        User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+}
+
+model ForumTopic {
+  id        String   @id @default(uuid())
+  churchId  String
+  title     String
+  content   String
+  userId    String
+  createdAt DateTime @default(now())
+
+  church    Church   @relation(fields: [churchId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  comments  ForumComment[]
+}
+
+model ForumComment {
+  id        String   @id @default(uuid())
+  topicId   String
+  userId    String
+  content   String
+  isHidden  Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  topic     ForumTopic @relation(fields: [topicId], references: [id], onDelete: Cascade)
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  reports   ForumReport[]
+}
+
+model ForumReport {
+  id        String   @id @default(uuid())
+  commentId String
+  userId    String
+  reason    String
+  resolved  Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  comment   ForumComment @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Devotional {
+  id        String   @id @default(uuid())
+  churchId  String
+  title     String
+  content   String
+  date      DateTime
+  createdAt DateTime @default(now())
+
+  church    Church   @relation(fields: [churchId], references: [id], onDelete: Cascade)
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String
+  content   String
+  link      String?
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }

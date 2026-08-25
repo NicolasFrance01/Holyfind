@@ -22,7 +22,7 @@ const EVENT_EMOJI: Record<string, string> = {
 const defaultEventForm = { title: "", description: "", eventDate: "", type: "MISA", imageUrl: "", videoUrl: "", notes: "", isPublic: true, mediaUrls: [] as string[], isJointEvent: false, jointChurches: [] as any[] };
 const defaultActivityForm = { title: "", description: "", days: [] as string[], startTime: "", endTime: "", imageUrl: "", videoUrl: "", notes: "", isActive: true, mediaUrls: [] as string[] };
 
-type Section = "perfil" | "eventos" | "actividades" | "comentarios" | "visibilidad" | "autorizados";
+type Section = "perfil" | "eventos" | "actividades" | "devocionales" | "oraciones" | "foro" | "comentarios" | "visibilidad" | "autorizados";
 
 export default function ChurchDashboardClient({ churches, userId, userEmail }: { churches: any[], userId: string, userEmail: string }) {
   const [selectedChurchId, setSelectedChurchId] = useState<string>(churches[0]?.id || "");
@@ -55,7 +55,7 @@ export default function ChurchDashboardClient({ churches, userId, userEmail }: {
 
   const showMsg = (text: string, ok: boolean) => { setMsg({ text, ok }); setTimeout(() => setMsg(null), 4000); };
 
-  const initProfile = (c: any) => setProfileForm({ name: c.name, description: c.description || "", type: c.type || "Católica", imageUrl: c.imageUrl || "", phone: c.phone || "", website: c.website || "", instagram: c.instagram || "", youtube: c.youtube || "", facebook: c.facebook || "", whatsapp: c.whatsapp || "" });
+  const initProfile = (c: any) => setProfileForm({ name: c.name, description: c.description || "", type: c.type || "Católica", imageUrl: c.imageUrl || "", phone: c.phone || "", website: c.website || "", instagram: c.instagram || "", youtube: c.youtube || "", facebook: c.facebook || "", whatsapp: c.whatsapp || "", donationUrl: c.donationUrl || "" });
   if (!profileForm && church) initProfile(church);
 
   const sBtn = (active: boolean) => ({
@@ -170,8 +170,11 @@ export default function ChurchDashboardClient({ churches, userId, userEmail }: {
               ["perfil", "🖊️", "Perfil"],
               ["eventos", "📅", `Eventos (${church?.events?.length || 0})`],
               ["actividades", "🏃", `Actividades (${church?.activities?.length || 0})`],
+              ["devocionales", "📖", "Devocionales"],
+              ["oraciones", "🙏", "Buzón de Oración"],
+              ["foro", "💬", "Comunidad/Foro"],
               ["visibilidad", "📊", "Visibilidad"],
-              ["comentarios", "💬", `Comentarios (${church?.comments?.length || 0})`],
+              ["comentarios", "⭐", `Reseñas (${church?.comments?.length || 0})`],
               ["autorizados", "👥", "Autorizados"],
             ] as [Section, string, string][]).map(([key, icon, label]) => (
               <button key={key} onClick={() => setActiveSection(key)} style={sBtn(activeSection === key)}>
@@ -221,6 +224,15 @@ export default function ChurchDashboardClient({ churches, userId, userEmail }: {
                       <div className="form-group"><label className="form-label">▶️ YouTube</label><input className="form-input" placeholder="https://youtube.com/@tuiglesia" value={profileForm.youtube} onChange={e => setProfileForm({ ...profileForm, youtube: e.target.value })} /></div>
                       <div className="form-group"><label className="form-label">📘 Facebook</label><input className="form-input" placeholder="https://facebook.com/tuiglesia" value={profileForm.facebook} onChange={e => setProfileForm({ ...profileForm, facebook: e.target.value })} /></div>
                       <div className="form-group"><label className="form-label">💬 WhatsApp</label><input className="form-input" placeholder="+549..." value={profileForm.whatsapp} onChange={e => setProfileForm({ ...profileForm, whatsapp: e.target.value })} /></div>
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label" style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                        <span style={{ color: "#38bdf8" }}>💳</span> Link de Donaciones / Ofrendas
+                      </label>
+                      <input className="form-input" type="url" value={profileForm.donationUrl} onChange={e => setProfileForm({ ...profileForm, donationUrl: e.target.value })} placeholder="https://link.mercadopago.com/..." style={{ borderColor: "rgba(56, 189, 248, 0.4)", background: "rgba(56, 189, 248, 0.05)" }} />
+                      <p style={{ color: "var(--text-secondary)", fontSize: "0.8rem", marginTop: "4px" }}>
+                        Los usuarios verán un botón destacado en tu perfil para aportar ofrendas directamente a este link.
+                      </p>
                     </div>
                     <div style={{ display: "flex", justifyContent: "flex-end" }}>
                       <button type="submit" className="btn-primary" disabled={isPending} style={{ padding: "12px 28px" }}>{isPending ? "Guardando..." : "💾 Guardar"}</button>
@@ -379,6 +391,45 @@ export default function ChurchDashboardClient({ churches, userId, userEmail }: {
                 )}
               </div>
             )}
+            {/* ── DEVOCIONALES ── */}
+            {activeSection === "devocionales" && church && (
+              <div>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "22px" }}>
+                  <h1 style={{ color: "white", fontSize: "1.6rem", fontWeight: 800 }}>📖 Devocionales</h1>
+                  <button className="btn-primary" style={{ padding: "10px 20px" }}>+ Nuevo Devocional</button>
+                </div>
+                <div className="glass-panel" style={{ padding: "40px", textAlign: "center" }}>
+                  <div style={{ fontSize: "3rem" }}>📖</div>
+                  <h3 style={{ color: "white" }}>Próximamente</h3>
+                  <p style={{ color: "var(--text-secondary)" }}>Podrás crear y compartir devocionales diarios o semanales con tus seguidores.</p>
+                </div>
+              </div>
+            )}
+
+            {/* ── BUZÓN DE ORACIÓN ── */}
+            {activeSection === "oraciones" && church && (
+              <div>
+                <h1 style={{ color: "white", fontSize: "1.6rem", fontWeight: 800, marginBottom: "22px" }}>🙏 Buzón de Oración</h1>
+                <div className="glass-panel" style={{ padding: "40px", textAlign: "center" }}>
+                  <div style={{ fontSize: "3rem" }}>🙏</div>
+                  <h3 style={{ color: "white" }}>Próximamente</h3>
+                  <p style={{ color: "var(--text-secondary)" }}>Los usuarios podrán enviar peticiones de oración, anónimas o públicas, para que la iglesia ore por ellos.</p>
+                </div>
+              </div>
+            )}
+
+            {/* ── COMUNIDAD / FORO ── */}
+            {activeSection === "foro" && church && (
+              <div>
+                <h1 style={{ color: "white", fontSize: "1.6rem", fontWeight: 800, marginBottom: "22px" }}>💬 Comunidad / Foro</h1>
+                <div className="glass-panel" style={{ padding: "40px", textAlign: "center" }}>
+                  <div style={{ fontSize: "3rem" }}>💬</div>
+                  <h3 style={{ color: "white" }}>Próximamente</h3>
+                  <p style={{ color: "var(--text-secondary)" }}>Modera los temas de discusión, responde preguntas y fomenta la comunión entre los miembros.</p>
+                </div>
+              </div>
+            )}
+
 
             {/* ── AUTORIZADOS ── */}
             {activeSection === "autorizados" && church && (

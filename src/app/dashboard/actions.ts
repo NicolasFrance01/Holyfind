@@ -27,6 +27,7 @@ export async function updateChurchProfile(userId: string, churchId: string, data
         phone: data.phone,
         website: data.website,
         type: data.type,
+        donationUrl: data.donationUrl,
       }
     });
     revalidatePath("/dashboard");

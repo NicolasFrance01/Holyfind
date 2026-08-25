@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import Link from "next/link";
 import { toggleUserStatus, deleteChurch, deleteUser, updateUser, assignChurchManager, removeChurchManager } from "../actions";
 import { saveChurch } from "@/app/admin/actions";
+import { saveEventAdmin, deleteEventAdmin, saveActivityAdmin, deleteActivityAdmin } from "@/app/admin/actions";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 
@@ -43,6 +44,79 @@ export default function AdminDashboardClient({ churches, users, normalUsers, all
   const [isCreateUserOpen, setIsCreateUserOpen] = useState(false);
   const [userCreateMsg, setUserCreateMsg] = useState<{ text: string; ok: boolean } | null>(null);
   const [createUserForm, setCreateUserForm] = useState({ name: "", email: "", dni: "", password: "" });
+
+  // Event & Activity States
+  const defaultEventForm = { title: "", description: "", eventDate: "", type: "MISA", imageUrl: "", videoUrl: "", isPublic: true, churchId: churches[0]?.id || "" };
+  const defaultActivityForm = { title: "", description: "", days: "[]", startTime: "", endTime: "", isActive: true, imageUrl: "", videoUrl: "", churchId: churches[0]?.id || "" };
+  
+  const [isEventModalOpen, setIsEventModalOpen] = useState(false);
+  const [editingEvent, setEditingEvent] = useState<any>(null);
+  const [eventForm, setEventForm] = useState(defaultEventForm);
+  
+  const [isActivityModalOpen, setIsActivityModalOpen] = useState(false);
+  const [editingActivity, setEditingActivity] = useState<any>(null);
+  const [activityForm, setActivityForm] = useState(defaultActivityForm);
+
+  const openEventModal = (ev?: any) => {
+    if (ev) {
+      setEditingEvent(ev);
+      setEventForm({
+        title: ev.title, description: ev.description || "", eventDate: new Date(ev.eventDate).toISOString().slice(0, 16),
+        type: ev.type, imageUrl: ev.imageUrl || "", videoUrl: ev.videoUrl || "", isPublic: ev.isPublic, churchId: ev.churchId
+      });
+    } else {
+      setEditingEvent(null);
+      setEventForm(defaultEventForm);
+    }
+    setIsEventModalOpen(true);
+  };
+
+  const handleSaveEvent = (e: React.FormEvent) => {
+    e.preventDefault();
+    startTransition(async () => {
+      const res = await saveEventAdmin({ ...eventForm, id: editingEvent?.id });
+      if (res.error) alert(res.error);
+      else setIsEventModalOpen(false);
+    });
+  };
+
+  const handleDeleteEvent = (id: string) => {
+    if (!confirm("¿Eliminar este evento?")) return;
+    startTransition(async () => {
+      await deleteEventAdmin(id);
+    });
+  };
+
+  const openActivityModal = (act?: any) => {
+    if (act) {
+      setEditingActivity(act);
+      setActivityForm({
+        title: act.title, description: act.description || "", days: act.days || "[]",
+        startTime: act.startTime || "", endTime: act.endTime || "", isActive: act.isActive,
+        imageUrl: act.imageUrl || "", videoUrl: act.videoUrl || "", churchId: act.churchId
+      });
+    } else {
+      setEditingActivity(null);
+      setActivityForm(defaultActivityForm);
+    }
+    setIsActivityModalOpen(true);
+  };
+
+  const handleSaveActivity = (e: React.FormEvent) => {
+    e.preventDefault();
+    startTransition(async () => {
+      const res = await saveActivityAdmin({ ...activityForm, id: editingActivity?.id });
+      if (res.error) alert(res.error);
+      else setIsActivityModalOpen(false);
+    });
+  };
+
+  const handleDeleteActivity = (id: string) => {
+    if (!confirm("¿Eliminar esta actividad?")) return;
+    startTransition(async () => {
+      await deleteActivityAdmin(id);
+    });
+  };
 
   const showUserMsg = (text: string, ok: boolean) => {
     setUserCreateMsg({ text, ok });
@@ -365,7 +439,7 @@ export default function AdminDashboardClient({ churches, users, normalUsers, all
             <div className="glass-panel" style={{ padding: "30px", marginTop: "20px" }}>
               <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "20px", alignItems: "center" }}>
                 <h2 style={{ fontSize: "1.8rem" }}>Eventos Registrados</h2>
-                <button className="btn-primary" style={{ padding: "8px 16px", fontSize: "0.9rem" }}>+ Nuevo Evento</button>
+                <button className="btn-primary" style={{ padding: "8px 16px", fontSize: "0.9rem" }} onClick={() => openEventModal()}>+ Nuevo Evento</button>
               </div>
               {allEvents.length === 0 ? (
                 <p style={{ color: "var(--text-secondary)" }}>No hay eventos registrados.</p>
@@ -405,7 +479,7 @@ export default function AdminDashboardClient({ churches, users, normalUsers, all
             <div className="glass-panel" style={{ padding: "30px", marginTop: "20px" }}>
               <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "20px", alignItems: "center" }}>
                 <h2 style={{ fontSize: "1.8rem" }}>Actividades Registradas</h2>
-                <button className="btn-primary" style={{ padding: "8px 16px", fontSize: "0.9rem" }}>+ Nueva Actividad</button>
+                <button className="btn-primary" style={{ padding: "8px 16px", fontSize: "0.9rem" }} onClick={() => openActivityModal()}>+ Nueva Actividad</button>
               </div>
               {allActivities.length === 0 ? (
                 <p style={{ color: "var(--text-secondary)" }}>No hay actividades registradas.</p>
@@ -712,6 +786,156 @@ export default function AdminDashboardClient({ churches, users, normalUsers, all
               <div style={{ display: "flex", gap: "10px", marginTop: "10px", justifyContent: "flex-end" }}>
                 <button type="button" className="btn-secondary" onClick={() => setUserToEdit(null)}>Cancelar</button>
                 <button type="submit" className="btn-primary" disabled={isPending}>{isPending ? "Guardando..." : "Guardar Cambios"}</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ── Event Modal ── */}
+      {isEventModalOpen && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)", backdropFilter: "blur(4px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 3000, padding: "20px" }}>
+          <div className="glass-panel" style={{ width: "100%", maxWidth: "520px", padding: "30px", maxHeight: "90vh", overflowY: "auto" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px" }}>
+              <h2 style={{ color: "white", fontSize: "1.4rem", fontWeight: 800 }}>{editingEvent ? "✏️ Editar Evento" : "📅 Nuevo Evento"}</h2>
+              <button onClick={() => setIsEventModalOpen(false)} style={{ background: "none", border: "none", color: "var(--text-secondary)", fontSize: "1.5rem", cursor: "pointer" }}>×</button>
+            </div>
+
+            <form onSubmit={handleSaveEvent} style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+              <div className="form-group">
+                <label className="form-label">Nombre del Evento</label>
+                <input required className="form-input" value={eventForm.title} onChange={e => setEventForm({ ...eventForm, title: e.target.value })} placeholder="Ej: Misa de Domingo" />
+              </div>
+
+              <div style={{ display: "flex", gap: "12px" }}>
+                <div className="form-group" style={{ flex: 1 }}>
+                  <label className="form-label">Tipo</label>
+                  <select className="form-input" value={eventForm.type} onChange={e => setEventForm({ ...eventForm, type: e.target.value })}>
+                    {["MISA", "RETIRO", "CONCIERTO", "CONFERENCIA", "BAUTISMO", "BODA", "CONGRESO", "OTRO"].map(t => <option key={t} value={t}>{t}</option>)}
+                  </select>
+                </div>
+                <div className="form-group" style={{ flex: 1 }}>
+                  <label className="form-label">Fecha y Hora</label>
+                  <input required type="datetime-local" className="form-input" value={eventForm.eventDate} onChange={e => setEventForm({ ...eventForm, eventDate: e.target.value })} />
+                </div>
+              </div>
+              
+              <div className="form-group">
+                <label className="form-label">Iglesia Asociada</label>
+                <select className="form-input" required value={eventForm.churchId} onChange={e => setEventForm({ ...eventForm, churchId: e.target.value })}>
+                  <option value="" disabled>Seleccione una iglesia...</option>
+                  {churches.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                </select>
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Descripción</label>
+                <textarea className="form-input" rows={3} value={eventForm.description} onChange={e => setEventForm({ ...eventForm, description: e.target.value })} placeholder="Detalles del evento..." />
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">URL de Imagen del Evento (opcional)</label>
+                <input type="url" className="form-input" value={eventForm.imageUrl} onChange={e => setEventForm({ ...eventForm, imageUrl: e.target.value })} placeholder="https://ejemplo.com/imagen.jpg" />
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">URL de Video asociado (YouTube o Instagram)</label>
+                <input type="url" className="form-input" value={eventForm.videoUrl} onChange={e => setEventForm({ ...eventForm, videoUrl: e.target.value })} placeholder="https://youtube.com/..." />
+              </div>
+
+              <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                <input type="checkbox" id="isPublic" checked={eventForm.isPublic} onChange={e => setEventForm({ ...eventForm, isPublic: e.target.checked })} style={{ width: "16px", height: "16px", cursor: "pointer" }} />
+                <label htmlFor="isPublic" style={{ color: "var(--text-secondary)", fontSize: "0.9rem", cursor: "pointer" }}>
+                  Evento público (visible en el mapa)
+                </label>
+              </div>
+
+              <div style={{ display: "flex", gap: "10px", paddingTop: "8px", justifyContent: "flex-end" }}>
+                <button type="button" className="btn-secondary" onClick={() => setIsEventModalOpen(false)}>Cancelar</button>
+                <button type="submit" className="btn-primary" disabled={isPending}>
+                  {isPending ? "Guardando..." : "Guardar Evento"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ── Activity Modal ── */}
+      {isActivityModalOpen && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)", backdropFilter: "blur(4px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 3000, padding: "20px" }}>
+          <div className="glass-panel" style={{ width: "100%", maxWidth: "520px", padding: "30px", maxHeight: "90vh", overflowY: "auto" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px" }}>
+              <h2 style={{ color: "white", fontSize: "1.4rem", fontWeight: 800 }}>{editingActivity ? "✏️ Editar Actividad" : "🏃 Nueva Actividad"}</h2>
+              <button onClick={() => setIsActivityModalOpen(false)} style={{ background: "none", border: "none", color: "var(--text-secondary)", fontSize: "1.5rem", cursor: "pointer" }}>×</button>
+            </div>
+
+            <form onSubmit={handleSaveActivity} style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+              <div className="form-group">
+                <label className="form-label">Nombre de la Actividad</label>
+                <input required className="form-input" value={activityForm.title} onChange={e => setActivityForm({ ...activityForm, title: e.target.value })} placeholder="Ej: Grupo de Jóvenes" />
+              </div>
+              
+              <div className="form-group">
+                <label className="form-label">Iglesia Asociada</label>
+                <select className="form-input" required value={activityForm.churchId} onChange={e => setActivityForm({ ...activityForm, churchId: e.target.value })}>
+                  <option value="" disabled>Seleccione una iglesia...</option>
+                  {churches.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                </select>
+              </div>
+
+              <div style={{ display: "flex", gap: "12px" }}>
+                <div className="form-group" style={{ flex: 1 }}>
+                  <label className="form-label">Días</label>
+                  <select className="form-input" multiple value={JSON.parse(activityForm.days)} onChange={e => setActivityForm({ ...activityForm, days: JSON.stringify(Array.from(e.target.selectedOptions, option => option.value)) })} style={{ height: "100px" }}>
+                    <option value="MONDAY">Lunes</option>
+                    <option value="TUESDAY">Martes</option>
+                    <option value="WEDNESDAY">Miércoles</option>
+                    <option value="THURSDAY">Jueves</option>
+                    <option value="FRIDAY">Viernes</option>
+                    <option value="SATURDAY">Sábado</option>
+                    <option value="SUNDAY">Domingo</option>
+                  </select>
+                </div>
+                <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "10px" }}>
+                  <div className="form-group">
+                    <label className="form-label">Hora Inicio</label>
+                    <input type="time" className="form-input" value={activityForm.startTime} onChange={e => setActivityForm({ ...activityForm, startTime: e.target.value })} />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Hora Fin</label>
+                    <input type="time" className="form-input" value={activityForm.endTime} onChange={e => setActivityForm({ ...activityForm, endTime: e.target.value })} />
+                  </div>
+                </div>
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Descripción</label>
+                <textarea className="form-input" rows={3} value={activityForm.description} onChange={e => setActivityForm({ ...activityForm, description: e.target.value })} placeholder="Detalles de la actividad..." />
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">URL de Imagen (opcional)</label>
+                <input type="url" className="form-input" value={activityForm.imageUrl} onChange={e => setActivityForm({ ...activityForm, imageUrl: e.target.value })} placeholder="https://ejemplo.com/imagen.jpg" />
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">URL de Video asociado (opcional)</label>
+                <input type="url" className="form-input" value={activityForm.videoUrl} onChange={e => setActivityForm({ ...activityForm, videoUrl: e.target.value })} placeholder="https://youtube.com/..." />
+              </div>
+
+              <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                <input type="checkbox" id="isActive" checked={activityForm.isActive} onChange={e => setActivityForm({ ...activityForm, isActive: e.target.checked })} style={{ width: "16px", height: "16px", cursor: "pointer" }} />
+                <label htmlFor="isActive" style={{ color: "var(--text-secondary)", fontSize: "0.9rem", cursor: "pointer" }}>
+                  Actividad activa (visible públicamente)
+                </label>
+              </div>
+
+              <div style={{ display: "flex", gap: "10px", paddingTop: "8px", justifyContent: "flex-end" }}>
+                <button type="button" className="btn-secondary" onClick={() => setIsActivityModalOpen(false)}>Cancelar</button>
+                <button type="submit" className="btn-primary" disabled={isPending}>
+                  {isPending ? "Guardando..." : "Guardar Actividad"}
+                </button>
               </div>
             </form>
           </div>

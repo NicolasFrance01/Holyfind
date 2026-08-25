@@ -181,3 +181,113 @@ export async function importOsmChurch(data: any) {
     return { error: "Error al importar iglesia" };
   }
 }
+
+// ────────────────────────────────────────────────────────────────────────
+// Admin Event Actions
+// ────────────────────────────────────────────────────────────────────────
+
+export async function saveEventAdmin(data: any) {
+  try {
+    if (data.id) {
+      await prisma.event.update({
+        where: { id: data.id },
+        data: {
+          title: data.title,
+          description: data.description,
+          eventDate: new Date(data.eventDate),
+          type: data.type,
+          imageUrl: data.imageUrl,
+          videoUrl: data.videoUrl,
+          isPublic: data.isPublic,
+          churchId: data.churchId,
+        }
+      });
+    } else {
+      await prisma.event.create({
+        data: {
+          title: data.title,
+          description: data.description,
+          eventDate: new Date(data.eventDate),
+          type: data.type,
+          imageUrl: data.imageUrl,
+          videoUrl: data.videoUrl,
+          isPublic: data.isPublic,
+          churchId: data.churchId,
+        }
+      });
+    }
+    revalidatePath("/admin/maps");
+    return { success: true };
+  } catch (error) {
+    console.error(error);
+    return { error: "Failed to save event" };
+  }
+}
+
+export async function deleteEventAdmin(eventId: string) {
+  try {
+    await prisma.event.delete({
+      where: { id: eventId },
+    });
+    revalidatePath("/admin/maps");
+    return { success: true };
+  } catch (error) {
+    return { error: "Failed to delete event" };
+  }
+}
+
+// ────────────────────────────────────────────────────────────────────────
+// Admin Activity Actions
+// ────────────────────────────────────────────────────────────────────────
+
+export async function saveActivityAdmin(data: any) {
+  try {
+    if (data.id) {
+      await prisma.activity.update({
+        where: { id: data.id },
+        data: {
+          title: data.title,
+          description: data.description,
+          days: data.days,
+          startTime: data.startTime,
+          endTime: data.endTime,
+          isActive: data.isActive,
+          imageUrl: data.imageUrl,
+          videoUrl: data.videoUrl,
+          churchId: data.churchId,
+        }
+      });
+    } else {
+      await prisma.activity.create({
+        data: {
+          title: data.title,
+          description: data.description,
+          days: data.days,
+          startTime: data.startTime,
+          endTime: data.endTime,
+          isActive: data.isActive,
+          imageUrl: data.imageUrl,
+          videoUrl: data.videoUrl,
+          churchId: data.churchId,
+        }
+      });
+    }
+    revalidatePath("/admin/maps");
+    return { success: true };
+  } catch (error) {
+    console.error(error);
+    return { error: "Failed to save activity" };
+  }
+}
+
+export async function deleteActivityAdmin(activityId: string) {
+  try {
+    await prisma.activity.delete({
+      where: { id: activityId },
+    });
+    revalidatePath("/admin/maps");
+    return { success: true };
+  } catch (error) {
+    return { error: "Failed to delete activity" };
+  }
+}
