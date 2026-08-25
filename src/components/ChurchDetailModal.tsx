@@ -2,7 +2,7 @@
 
 import { useState, useTransition, useEffect } from "react";
 import { useSession } from "next-auth/react";
-import { toggleFollowChurch, toggleEventLike, toggleEventSave, addComment, trackChurchClick } from "@/app/dashboard/userActions";
+import { toggleFollowChurch, toggleEventLike, toggleEventSave, addComment, trackChurchClick, submitPrayerRequest, createForumTopic, createForumComment } from "@/app/dashboard/userActions";
 
 const DAY_MAP: Record<string, string> = { MONDAY: "Lun", TUESDAY: "Mar", WEDNESDAY: "Mié", THURSDAY: "Jue", FRIDAY: "Vie", SATURDAY: "Sáb", SUNDAY: "Dom" };
 
@@ -30,7 +30,7 @@ export default function ChurchDetailModal({ church, onClose, userId, followingCh
   const { data: session } = useSession();
   const currentUserId = userId || (session?.user as any)?.id;
   const [isPending, startTransition] = useTransition();
-  const [tab, setTab] = useState<"info" | "eventos" | "actividades" | "comentarios">("info");
+  const [tab, setTab] = useState<"info" | "eventos" | "actividades" | "devocionales" | "oraciones" | "foro" | "comentarios">("info");
   const [isFollowing, setIsFollowing] = useState(followingChurchIds.includes(church.id));
   const [localLikes, setLocalLikes] = useState<Set<string>>(new Set(likedEventIds));
   const [localSaves, setLocalSaves] = useState<Set<string>>(new Set(savedEventIds));
@@ -39,6 +39,13 @@ export default function ChurchDetailModal({ church, onClose, userId, followingCh
   const [commentText, setCommentText] = useState("");
   const [commentSent, setCommentSent] = useState(false);
   const [showAuthPrompt, setShowAuthPrompt] = useState(false);
+  const [prayerText, setPrayerText] = useState("");
+  const [prayerPublic, setPrayerPublic] = useState(false);
+  const [prayerSent, setPrayerSent] = useState(false);
+  const [forumTitle, setForumTitle] = useState("");
+  const [forumText, setForumText] = useState("");
+  const [activeForumTopic, setActiveForumTopic] = useState<any>(null);
+  const [commentForumText, setCommentForumText] = useState("");
 
   useEffect(() => {
     trackChurchClick(church.id, "profile_view");
@@ -73,6 +80,33 @@ export default function ChurchDetailModal({ church, onClose, userId, followingCh
     startTransition(async () => {
       const r = await addComment(currentUserId, church.id, rating, commentText.trim());
       if (!r.error) { setCommentText(""); setCommentSent(true); }
+    });
+  };
+
+  const submitPrayer = () => {
+    if (!currentUserId) { setShowAuthPrompt(true); return; }
+    if (!prayerText.trim()) return;
+    startTransition(async () => {
+      const r = await submitPrayerRequest(currentUserId, church.id, prayerText.trim(), prayerPublic);
+      if (!r.error) { setPrayerText(""); setPrayerSent(true); }
+    });
+  };
+
+  const submitForumTopic = () => {
+    if (!currentUserId) { setShowAuthPrompt(true); return; }
+    if (!forumTitle.trim() || !forumText.trim()) return;
+    startTransition(async () => {
+      const r = await createForumTopic(currentUserId, church.id, forumTitle.trim(), forumText.trim());
+      if (!r.error) { setForumTitle(""); setForumText(""); setTab("foro"); }
+    });
+  };
+
+  const submitForumComment = (topicId: string) => {
+    if (!currentUserId) { setShowAuthPrompt(true); return; }
+    if (!commentForumText.trim()) return;
+    startTransition(async () => {
+      const r = await createForumComment(currentUserId, topicId, commentForumText.trim());
+      if (!r.error) { setCommentForumText(""); }
     });
   };
 
@@ -254,30 +288,121 @@ export default function ChurchDetailModal({ church, onClose, userId, followingCh
             </div>
           )}
 
-          {/* Tab: Devocionales (Stub) */}
+          {/* Tab: Devocionales */}
           {tab === "devocionales" && (
-            <div style={{ padding: "30px", textAlign: "center" }}>
-              <div style={{ fontSize: "3rem", marginBottom: "10px" }}>📖</div>
-              <h3 style={{ color: "white" }}>Próximamente</h3>
-              <p style={{ color: "var(--text-secondary)" }}>Aquí podrás leer los devocionales compartidos por esta iglesia.</p>
+            <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+              {(!church.devotionals || church.devotionals.length === 0) ? (
+                <p style={{ color: "var(--text-secondary)", textAlign: "center", padding: "20px" }}>Sin devocionales compartidos</p>
+              ) : (
+                church.devotionals.map((dev: any) => (
+                  <div key={dev.id} style={{ padding: "16px", borderRadius: "12px", border: "1px solid var(--glass-border)", background: "rgba(255,255,255,0.03)" }}>
+                    {dev.imageUrl && <img src={dev.imageUrl} alt="" style={{ width: "100%", height: "140px", objectFit: "cover", borderRadius: "8px", marginBottom: "12px" }} />}
+                    <h3 style={{ color: "white", fontSize: "1.05rem", fontWeight: 700, margin: "0 0 4px" }}>{dev.title}</h3>
+                    <p style={{ color: "var(--text-secondary)", fontSize: "0.8rem", margin: "0 0 10px" }}>
+                      🗓️ {new Date(dev.createdAt).toLocaleDateString("es-AR")}
+                      {dev.author && ` • ✍️ ${dev.author}`}
+                    </p>
+                    <p style={{ color: "white", fontSize: "0.95rem", lineHeight: "1.6", whiteSpace: "pre-wrap" }}>{dev.content}</p>
+                    {dev.videoUrl && (
+                      <a href={dev.videoUrl} target="_blank" rel="noopener" style={{ display: "inline-block", color: "#818cf8", fontSize: "0.85rem", marginTop: "10px" }}>🎥 Ver Video Adjunto</a>
+                    )}
+                  </div>
+                ))
+              )}
             </div>
           )}
 
-          {/* Tab: Oraciones (Stub) */}
+          {/* Tab: Oraciones */}
           {tab === "oraciones" && (
-            <div style={{ padding: "30px", textAlign: "center" }}>
-              <div style={{ fontSize: "3rem", marginBottom: "10px" }}>🙏</div>
-              <h3 style={{ color: "white" }}>Próximamente</h3>
-              <p style={{ color: "var(--text-secondary)" }}>Podrás enviar peticiones de oración directamente a la iglesia.</p>
+            <div>
+              <div style={{ padding: "20px", borderRadius: "12px", border: "1px solid var(--glass-border)", background: "rgba(255,255,255,0.03)", marginBottom: "20px" }}>
+                <h3 style={{ color: "white", fontSize: "1.1rem", marginBottom: "6px" }}>🙏 Enviar Petición</h3>
+                <p style={{ color: "var(--text-secondary)", fontSize: "0.85rem", marginBottom: "12px" }}>Escribe tu petición de oración. Puedes hacerla pública para que otros se unan, o mantenerla privada solo para la iglesia.</p>
+                {prayerSent ? (
+                  <div style={{ padding: "16px", background: "rgba(16,185,129,0.15)", border: "1px solid #10b981", borderRadius: "8px", color: "#10b981", textAlign: "center" }}>
+                    ✅ ¡Petición enviada! La iglesia estará orando por ti.
+                  </div>
+                ) : (
+                  <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                    <textarea value={prayerText} onChange={e => setPrayerText(e.target.value)} rows={4} style={{ width: "100%", padding: "12px", borderRadius: "8px", border: "1px solid var(--border)", background: "rgba(0,0,0,0.4)", color: "white", fontSize: "0.9rem" }} placeholder="Mi petición es..."></textarea>
+                    <label style={{ display: "flex", alignItems: "center", gap: "8px", color: "var(--text-secondary)", fontSize: "0.85rem", cursor: "pointer" }}>
+                      <input type="checkbox" checked={prayerPublic} onChange={e => setPrayerPublic(e.target.checked)} />
+                      Hacer petición pública (otros usuarios podrán verla)
+                    </label>
+                    <button onClick={submitPrayer} disabled={isPending || !prayerText.trim()} style={{ padding: "10px 16px", borderRadius: "8px", background: "#4f46e5", color: "white", border: "none", fontWeight: 700, cursor: "pointer", opacity: (!prayerText.trim() || isPending) ? 0.5 : 1 }}>{isPending ? "Enviando..." : "Enviar Petición"}</button>
+                  </div>
+                )}
+              </div>
+              
+              <h3 style={{ color: "white", fontSize: "1rem", marginBottom: "10px" }}>📢 Peticiones Públicas</h3>
+              <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                {(!church.prayerRequests || church.prayerRequests.filter((r: any) => r.isPublic).length === 0) ? (
+                  <p style={{ color: "var(--text-secondary)", fontSize: "0.85rem", textAlign: "center" }}>No hay peticiones públicas recientes.</p>
+                ) : (
+                  church.prayerRequests.filter((r: any) => r.isPublic).map((req: any) => (
+                    <div key={req.id} style={{ padding: "12px", borderRadius: "10px", background: "rgba(0,0,0,0.3)", border: "1px solid rgba(255,255,255,0.05)" }}>
+                      <p style={{ color: "white", fontSize: "0.9rem", margin: "0 0 6px" }}>{req.content}</p>
+                      <p style={{ color: "var(--text-secondary)", fontSize: "0.75rem", margin: 0 }}>🗓️ {new Date(req.createdAt).toLocaleDateString("es-AR")} {req.status === "PRAYING" && "• 🙏 Orando"} {req.status === "ANSWERED" && "• ✨ Respondida"}</p>
+                    </div>
+                  ))
+                )}
+              </div>
             </div>
           )}
 
-          {/* Tab: Foro (Stub) */}
+          {/* Tab: Foro */}
           {tab === "foro" && (
-            <div style={{ padding: "30px", textAlign: "center" }}>
-              <div style={{ fontSize: "3rem", marginBottom: "10px" }}>💬</div>
-              <h3 style={{ color: "white" }}>Próximamente</h3>
-              <p style={{ color: "var(--text-secondary)" }}>Un espacio para charlar y conectar con la comunidad de esta iglesia.</p>
+            <div>
+              {!activeForumTopic ? (
+                <>
+                  <div style={{ padding: "16px", borderRadius: "12px", border: "1px solid var(--glass-border)", background: "rgba(255,255,255,0.03)", marginBottom: "20px" }}>
+                    <h3 style={{ color: "white", fontSize: "1rem", marginBottom: "10px" }}>💬 Nuevo Tema de Discusión</h3>
+                    <input value={forumTitle} onChange={e => setForumTitle(e.target.value)} placeholder="Título del tema" style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid var(--border)", background: "rgba(0,0,0,0.4)", color: "white", fontSize: "0.9rem", marginBottom: "8px" }} />
+                    <textarea value={forumText} onChange={e => setForumText(e.target.value)} rows={3} placeholder="Contenido o pregunta..." style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid var(--border)", background: "rgba(0,0,0,0.4)", color: "white", fontSize: "0.9rem", marginBottom: "10px" }}></textarea>
+                    <button onClick={submitForumTopic} disabled={isPending || !forumTitle.trim() || !forumText.trim()} style={{ padding: "8px 16px", borderRadius: "8px", background: "#4f46e5", color: "white", border: "none", fontWeight: 700, cursor: "pointer", opacity: (!forumTitle.trim() || !forumText.trim() || isPending) ? 0.5 : 1 }}>{isPending ? "Publicando..." : "Publicar Tema"}</button>
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                    {(!church.forumTopics || church.forumTopics.length === 0) ? (
+                      <p style={{ color: "var(--text-secondary)", textAlign: "center" }}>No hay temas de discusión aún.</p>
+                    ) : (
+                      church.forumTopics.map((topic: any) => (
+                        <div key={topic.id} onClick={() => setActiveForumTopic(topic)} style={{ padding: "14px", borderRadius: "12px", border: "1px solid var(--border)", cursor: "pointer", transition: "background 0.2s" }} className="hover:bg-white/5">
+                          <h4 style={{ color: "white", fontSize: "1rem", margin: "0 0 4px" }}>{topic.title}</h4>
+                          <p style={{ color: "var(--text-secondary)", fontSize: "0.85rem", margin: "0 0 8px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{topic.content}</p>
+                          <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.75rem", color: "var(--text-secondary)" }}>
+                            <span>🗓️ {new Date(topic.createdAt).toLocaleDateString("es-AR")}</span>
+                            <span>💬 {topic.comments?.length || 0} comentarios</span>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </>
+              ) : (
+                <div>
+                  <button onClick={() => setActiveForumTopic(null)} style={{ background: "none", border: "none", color: "#818cf8", cursor: "pointer", fontSize: "0.85rem", marginBottom: "14px" }}>← Volver a los temas</button>
+                  <div style={{ padding: "16px", borderRadius: "12px", background: "rgba(99,102,241,0.1)", border: "1px solid rgba(99,102,241,0.3)", marginBottom: "20px" }}>
+                    <h3 style={{ color: "white", fontSize: "1.2rem", margin: "0 0 8px" }}>{activeForumTopic.title}</h3>
+                    <p style={{ color: "white", fontSize: "0.95rem", lineHeight: "1.5" }}>{activeForumTopic.content}</p>
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "10px", marginBottom: "20px" }}>
+                    {(activeForumTopic.comments || []).length === 0 ? (
+                      <p style={{ color: "var(--text-secondary)", fontSize: "0.85rem", textAlign: "center" }}>No hay comentarios en este tema.</p>
+                    ) : (
+                      activeForumTopic.comments.map((c: any) => (
+                        <div key={c.id} style={{ padding: "12px", borderRadius: "8px", background: "rgba(255,255,255,0.05)" }}>
+                          <p style={{ color: "white", fontSize: "0.9rem", margin: "0 0 4px" }}>{c.content}</p>
+                          <p style={{ color: "var(--text-secondary)", fontSize: "0.75rem", margin: 0 }}>🗓️ {new Date(c.createdAt).toLocaleDateString("es-AR")}</p>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                  <div style={{ display: "flex", gap: "8px" }}>
+                    <input value={commentForumText} onChange={e => setCommentForumText(e.target.value)} placeholder="Escribe un comentario..." style={{ flex: 1, padding: "10px", borderRadius: "8px", border: "1px solid var(--border)", background: "rgba(0,0,0,0.4)", color: "white" }} />
+                    <button onClick={() => submitForumComment(activeForumTopic.id)} disabled={isPending || !commentForumText.trim()} style={{ padding: "0 16px", borderRadius: "8px", background: "#4f46e5", color: "white", border: "none", fontWeight: 700, cursor: "pointer", opacity: (!commentForumText.trim() || isPending) ? 0.5 : 1 }}>Enviar</button>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 

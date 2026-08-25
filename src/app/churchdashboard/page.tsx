@@ -41,6 +41,9 @@ export default async function ChurchDashboardPage() {
             include: { user: { select: { name: true, profileImage: true } } },
             orderBy: { createdAt: "desc" }
           },
+          devotionals: { orderBy: { createdAt: "desc" } },
+          prayerRequests: { orderBy: { createdAt: "desc" } },
+          forumTopics: { orderBy: { createdAt: "desc" } },
           followers: true,
           stats: true,
         }

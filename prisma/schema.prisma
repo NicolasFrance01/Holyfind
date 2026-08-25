@@ -289,7 +289,8 @@ model PrayerRequest {
   id          String   @id @default(uuid())
   churchId    String
   content     String
-  isAnonymous Boolean  @default(false)
+  isPublic    Boolean  @default(false)
+  status      String   @default("PENDING") // PENDING, PRAYING, ANSWERED
   userId      String?
   createdAt   DateTime @default(now())
 
@@ -340,7 +341,9 @@ model Devotional {
   churchId  String
   title     String
   content   String
-  date      DateTime
+  author    String?
+  imageUrl  String?
+  videoUrl  String?
   createdAt DateTime @default(now())
 
   church    Church   @relation(fields: [churchId], references: [id], onDelete: Cascade)

@@ -98,7 +98,64 @@ export async function addComment(userId: string, churchId: string, rating: numbe
     });
     revalidatePath("/maps");
     return { success: true };
-  } catch { return { error: "Error al publicar el comentario" }; }
+  } catch (error) {
+    return { error: "Error al agregar el comentario" };
+  }
+}
+
+// ── Engagement (Buzón de Oración y Foro) ──────────────────────────────────────
+
+export async function submitPrayerRequest(userId: string, churchId: string, content: string, isPublic: boolean) {
+  try {
+    await prisma.prayerRequest.create({
+      data: {
+        content,
+        isPublic,
+        churchId,
+        userId,
+      }
+    });
+    revalidatePath("/maps");
+    revalidatePath("/dashboard");
+    return { success: true };
+  } catch (error) {
+    return { error: "Error al enviar petición de oración" };
+  }
+}
+
+export async function createForumTopic(userId: string, churchId: string, title: string, content: string) {
+  try {
+    await prisma.forumTopic.create({
+      data: {
+        title,
+        content,
+        churchId,
+        userId,
+      }
+    });
+    revalidatePath("/maps");
+    revalidatePath("/dashboard");
+    return { success: true };
+  } catch (error) {
+    return { error: "Error al crear tema en el foro" };
+  }
+}
+
+export async function createForumComment(userId: string, topicId: string, content: string) {
+  try {
+    await prisma.forumComment.create({
+      data: {
+        content,
+        topicId,
+        userId,
+      }
+    });
+    revalidatePath("/maps");
+    revalidatePath("/dashboard");
+    return { success: true };
+  } catch (error) {
+    return { error: "Error al comentar en el foro" };
+  }
 }
 
 // ── Track Stats ───────────────────────────────────────────────────────────────

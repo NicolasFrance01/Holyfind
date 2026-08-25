@@ -7,7 +7,9 @@ import ImageUploader from "@/components/ImageUploader";
 import {
   updateChurchProfile, createEvent, updateEvent, deleteEvent,
   createActivity, updateActivity, deleteActivity,
-  toggleCommentVisibility, addAuthorizedUser, removeAuthorizedUser
+  toggleCommentVisibility, addAuthorizedUser, removeAuthorizedUser,
+  createDevotional, deleteDevotional,
+  updatePrayerRequestStatus, deleteForumTopic, deleteForumComment
 } from "./actions";
 
 const EVENT_TYPES = ["MISA", "RETIRO", "CONCIERTO", "CONFERENCIA", "BAUTISMO", "BODA", "CONGRESO", "OTRO"];
@@ -21,6 +23,7 @@ const EVENT_EMOJI: Record<string, string> = {
 
 const defaultEventForm = { title: "", description: "", eventDate: "", type: "MISA", imageUrl: "", videoUrl: "", notes: "", isPublic: true, mediaUrls: [] as string[], isJointEvent: false, jointChurches: [] as any[] };
 const defaultActivityForm = { title: "", description: "", days: [] as string[], startTime: "", endTime: "", imageUrl: "", videoUrl: "", notes: "", isActive: true, mediaUrls: [] as string[] };
+const defaultDevotionalForm = { title: "", content: "", author: "", imageUrl: "", videoUrl: "" };
 
 type Section = "perfil" | "eventos" | "actividades" | "devocionales" | "oraciones" | "foro" | "comentarios" | "visibilidad" | "autorizados";
 
@@ -46,6 +49,11 @@ export default function ChurchDashboardClient({ churches, userId, userEmail }: {
   // Delete Modals
   const [eventToDelete, setEventToDelete] = useState<string | null>(null);
   const [activityToDelete, setActivityToDelete] = useState<string | null>(null);
+  const [devotionalToDelete, setDevotionalToDelete] = useState<string | null>(null);
+
+  // Devotionals
+  const [isDevotionalOpen, setIsDevotionalOpen] = useState(false);
+  const [devotionalForm, setDevotionalForm] = useState({ ...defaultDevotionalForm });
 
   // Authorized
   const [authEmail, setAuthEmail] = useState("");
@@ -105,14 +113,20 @@ export default function ChurchDashboardClient({ churches, userId, userEmail }: {
   const saveActivity = (e: React.FormEvent) => {
     e.preventDefault();
     startTransition(async () => {
-      const r = editingActivity ? await updateActivity(userId, church.id, editingActivity.id, activityForm) : await createActivity(userId, church.id, activityForm);
+      const r = editingActivity ? await updateActivity(userId, church.id, editingActivity.id, { ...activityForm, days: JSON.stringify(activityForm.days) }) : await createActivity(userId, church.id, { ...activityForm, days: JSON.stringify(activityForm.days) });
       if (r.error) showMsg(r.error, false);
-      else { showMsg(editingActivity ? "✅ Actividad actualizada" : "✅ Actividad creada", true); setIsActivityOpen(false); }
+      else { showMsg(`✅ Actividad ${editingActivity ? "actualizada" : "creada"}`, true); setIsActivityOpen(false); }
     });
   };
 
-  const confirmDelEvent = () => { if (!eventToDelete) return; startTransition(async () => { const r = await deleteEvent(userId, church.id, eventToDelete); r.error ? showMsg(r.error, false) : showMsg("✅ Evento eliminado", true); setEventToDelete(null); }); };
-  const confirmDelActivity = () => { if (!activityToDelete) return; startTransition(async () => { const r = await deleteActivity(userId, church.id, activityToDelete); r.error ? showMsg(r.error, false) : showMsg("✅ Actividad eliminada", true); setActivityToDelete(null); }); };
+  const saveDevotional = (e: React.FormEvent) => {
+    e.preventDefault();
+    startTransition(async () => {
+      const r = await createDevotional(userId, church.id, devotionalForm);
+      if (r.error) showMsg(r.error, false);
+      else { showMsg("✅ Devocional publicado", true); setIsDevotionalOpen(false); setDevotionalForm({ ...defaultDevotionalForm }); }
+    });
+  };
 
   const toggleDay = (key: string) => setActivityForm(f => ({ ...f, days: f.days.includes(key) ? f.days.filter((d: string) => d !== key) : [...f.days, key] }));
 
@@ -396,13 +410,38 @@ export default function ChurchDashboardClient({ churches, userId, userEmail }: {
               <div>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "22px" }}>
                   <h1 style={{ color: "white", fontSize: "1.6rem", fontWeight: 800 }}>📖 Devocionales</h1>
-                  <button className="btn-primary" style={{ padding: "10px 20px" }}>+ Nuevo Devocional</button>
+                  <button className="btn-primary" onClick={() => { setDevotionalForm({ ...defaultDevotionalForm }); setIsDevotionalOpen(true); }} style={{ padding: "10px 20px" }}>+ Nuevo Devocional</button>
                 </div>
-                <div className="glass-panel" style={{ padding: "40px", textAlign: "center" }}>
-                  <div style={{ fontSize: "3rem" }}>📖</div>
-                  <h3 style={{ color: "white" }}>Próximamente</h3>
-                  <p style={{ color: "var(--text-secondary)" }}>Podrás crear y compartir devocionales diarios o semanales con tus seguidores.</p>
-                </div>
+                {(!church.devotionals || church.devotionals.length === 0) ? (
+                  <div className="glass-panel" style={{ padding: "40px", textAlign: "center" }}>
+                    <div style={{ fontSize: "3rem" }}>📖</div>
+                    <h3 style={{ color: "white" }}>Aún no has publicado devocionales</h3>
+                    <p style={{ color: "var(--text-secondary)" }}>Comparte reflexiones diarias o semanales con tus seguidores.</p>
+                  </div>
+                ) : (
+                  <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                    {church.devotionals.map((dev: any) => (
+                      <div key={dev.id} className="glass-panel" style={{ padding: "18px" }}>
+                        <div style={{ display: "flex", gap: "14px" }}>
+                          {dev.imageUrl && <img src={dev.imageUrl} alt="" style={{ width: "100px", height: "100px", objectFit: "cover", borderRadius: "8px" }} />}
+                          <div style={{ flex: 1 }}>
+                            <div style={{ display: "flex", justifyContent: "space-between" }}>
+                              <h3 style={{ color: "white", fontSize: "1.1rem", margin: "0 0 6px" }}>{dev.title}</h3>
+                              <button onClick={() => setDevotionalToDelete(dev.id)} style={{ color: "#ef4444", background: "none", border: "none", cursor: "pointer", fontSize: "1.2rem" }}>🗑️</button>
+                            </div>
+                            <p style={{ color: "var(--text-secondary)", fontSize: "0.85rem", margin: "0 0 10px" }}>
+                              🗓️ {new Date(dev.createdAt).toLocaleDateString("es-AR")}
+                              {dev.author && ` • ✍️ ${dev.author}`}
+                            </p>
+                            <p style={{ color: "var(--text-secondary)", fontSize: "0.9rem", lineHeight: "1.5", whiteSpace: "pre-wrap", display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
+                              {dev.content}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
 
@@ -410,11 +449,34 @@ export default function ChurchDashboardClient({ churches, userId, userEmail }: {
             {activeSection === "oraciones" && church && (
               <div>
                 <h1 style={{ color: "white", fontSize: "1.6rem", fontWeight: 800, marginBottom: "22px" }}>🙏 Buzón de Oración</h1>
-                <div className="glass-panel" style={{ padding: "40px", textAlign: "center" }}>
-                  <div style={{ fontSize: "3rem" }}>🙏</div>
-                  <h3 style={{ color: "white" }}>Próximamente</h3>
-                  <p style={{ color: "var(--text-secondary)" }}>Los usuarios podrán enviar peticiones de oración, anónimas o públicas, para que la iglesia ore por ellos.</p>
-                </div>
+                {(!church.prayerRequests || church.prayerRequests.length === 0) ? (
+                  <div className="glass-panel" style={{ padding: "40px", textAlign: "center" }}>
+                    <div style={{ fontSize: "3rem" }}>🙏</div>
+                    <h3 style={{ color: "white" }}>Buzón vacío</h3>
+                    <p style={{ color: "var(--text-secondary)" }}>Aún no has recibido peticiones de oración.</p>
+                  </div>
+                ) : (
+                  <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                    {church.prayerRequests.map((req: any) => (
+                      <div key={req.id} className="glass-panel" style={{ padding: "16px", borderLeft: `4px solid ${req.status === "PENDING" ? "#f59e0b" : req.status === "PRAYING" ? "#3b82f6" : "#10b981"}` }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px" }}>
+                          <span style={{ fontSize: "0.85rem", color: "var(--text-secondary)" }}>🗓️ {new Date(req.createdAt).toLocaleDateString("es-AR")} {req.isPublic ? "📢 Pública" : "🔒 Privada"}</span>
+                          <select 
+                            value={req.status} 
+                            onChange={(e) => startTransition(async () => { await updatePrayerRequestStatus(userId, church.id, req.id, e.target.value); showMsg("✅ Estado actualizado", true); })}
+                            disabled={isPending}
+                            style={{ background: "rgba(0,0,0,0.5)", color: "white", border: "1px solid var(--border)", borderRadius: "6px", padding: "4px 8px", fontSize: "0.8rem" }}
+                          >
+                            <option value="PENDING">En espera</option>
+                            <option value="PRAYING">Orando</option>
+                            <option value="ANSWERED">Respondida</option>
+                          </select>
+                        </div>
+                        <p style={{ color: "white", fontSize: "1rem", lineHeight: "1.5" }}>{req.content}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
 
@@ -422,11 +484,26 @@ export default function ChurchDashboardClient({ churches, userId, userEmail }: {
             {activeSection === "foro" && church && (
               <div>
                 <h1 style={{ color: "white", fontSize: "1.6rem", fontWeight: 800, marginBottom: "22px" }}>💬 Comunidad / Foro</h1>
-                <div className="glass-panel" style={{ padding: "40px", textAlign: "center" }}>
-                  <div style={{ fontSize: "3rem" }}>💬</div>
-                  <h3 style={{ color: "white" }}>Próximamente</h3>
-                  <p style={{ color: "var(--text-secondary)" }}>Modera los temas de discusión, responde preguntas y fomenta la comunión entre los miembros.</p>
-                </div>
+                {(!church.forumTopics || church.forumTopics.length === 0) ? (
+                  <div className="glass-panel" style={{ padding: "40px", textAlign: "center" }}>
+                    <div style={{ fontSize: "3rem" }}>💬</div>
+                    <h3 style={{ color: "white" }}>Sin temas de discusión</h3>
+                    <p style={{ color: "var(--text-secondary)" }}>Los usuarios pueden iniciar temas de discusión desde tu perfil público.</p>
+                  </div>
+                ) : (
+                  <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+                    {church.forumTopics.map((topic: any) => (
+                      <div key={topic.id} className="glass-panel" style={{ padding: "16px" }}>
+                        <div style={{ display: "flex", justifyContent: "space-between" }}>
+                          <h3 style={{ color: "white", fontSize: "1.1rem", margin: "0 0 4px" }}>{topic.title}</h3>
+                          <button onClick={() => startTransition(async () => { await deleteForumTopic(userId, church.id, topic.id); showMsg("✅ Tema eliminado", true); })} style={{ background: "none", border: "none", color: "#ef4444", cursor: "pointer" }}>🗑️</button>
+                        </div>
+                        <p style={{ color: "var(--text-secondary)", fontSize: "0.85rem", marginBottom: "8px" }}>🗓️ {new Date(topic.createdAt).toLocaleDateString("es-AR")}</p>
+                        <p style={{ color: "white", fontSize: "0.95rem" }}>{topic.content}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
 

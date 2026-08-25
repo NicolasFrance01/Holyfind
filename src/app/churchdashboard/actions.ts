@@ -28,6 +28,7 @@ export async function updateChurchProfile(userId: string, churchId: string, data
         youtube: data.youtube || null,
         facebook: data.facebook || null,
         whatsapp: data.whatsapp || null,
+        donationUrl: data.donationUrl || null,
       }
     });
     revalidatePath("/churchdashboard");
@@ -232,4 +233,81 @@ export async function removeAuthorizedUser(userId: string, churchId: string, tar
     revalidatePath("/churchdashboard");
     return { success: true };
   } catch { return { error: "Error al remover autorizado" }; }
+}
+
+// ── Devocionales ──────────────────────────────────────────────────────────────
+
+export async function createDevotional(userId: string, churchId: string, data: any) {
+  if (!await verifyOwner(userId, churchId)) return { error: "No autorizado" };
+  try {
+    await prisma.devotional.create({
+      data: {
+        title: data.title,
+        content: data.content,
+        author: data.author || null,
+        imageUrl: data.imageUrl || null,
+        videoUrl: data.videoUrl || null,
+        churchId,
+      }
+    });
+    revalidatePath("/churchdashboard");
+    revalidatePath("/maps");
+    return { success: true };
+  } catch (error) {
+    return { error: "Error al crear devocional" };
+  }
+}
+
+export async function deleteDevotional(userId: string, churchId: string, devotionalId: string) {
+  if (!await verifyOwner(userId, churchId)) return { error: "No autorizado" };
+  try {
+    await prisma.devotional.delete({ where: { id: devotionalId } });
+    revalidatePath("/churchdashboard");
+    revalidatePath("/maps");
+    return { success: true };
+  } catch (error) {
+    return { error: "Error al eliminar devocional" };
+  }
+}
+
+// ── Buzón de Oración ──────────────────────────────────────────────────────────
+
+export async function updatePrayerRequestStatus(userId: string, churchId: string, requestId: string, status: string) {
+  if (!await verifyOwner(userId, churchId)) return { error: "No autorizado" };
+  try {
+    await prisma.prayerRequest.update({
+      where: { id: requestId },
+      data: { status }
+    });
+    revalidatePath("/churchdashboard");
+    return { success: true };
+  } catch (error) {
+    return { error: "Error al actualizar petición" };
+  }
+}
+
+// ── Foro ──────────────────────────────────────────────────────────────────────
+
+export async function deleteForumTopic(userId: string, churchId: string, topicId: string) {
+  if (!await verifyOwner(userId, churchId)) return { error: "No autorizado" };
+  try {
+    await prisma.forumTopic.delete({ where: { id: topicId } });
+    revalidatePath("/churchdashboard");
+    revalidatePath("/maps");
+    return { success: true };
+  } catch (error) {
+    return { error: "Error al eliminar tema" };
+  }
+}
+
+export async function deleteForumComment(userId: string, churchId: string, commentId: string) {
+  if (!await verifyOwner(userId, churchId)) return { error: "No autorizado" };
+  try {
+    await prisma.forumComment.delete({ where: { id: commentId } });
+    revalidatePath("/churchdashboard");
+    revalidatePath("/maps");
+    return { success: true };
+  } catch (error) {
+    return { error: "Error al eliminar comentario" };
+  }
 }
