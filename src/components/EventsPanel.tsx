@@ -291,13 +291,11 @@ export default function EventsPanel({ events, userId, likedEventIds = [], savedE
                 const embed = embedUrl(selectedEvent.videoUrl);
                 if (embed) {
                   return (
-                    <div style={{ marginBottom: "16px" }}>
-                      <div style={{ borderRadius: "12px", overflow: "hidden", position: "relative", paddingTop: embed.type === "youtube" ? "56.25%" : "120%", marginBottom: "8px" }}>
-                        <iframe src={embed.src} style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%" }} frameBorder={0} allow="autoplay; encrypted-media" allowFullScreen scrolling="no" />
+                    <div style={{ marginBottom: "8px" }}>
+                      <div style={{ borderRadius: "8px", overflow: "hidden", height: "180px", maxWidth: "320px", marginBottom: "4px", background: "#000" }}>
+                        <iframe src={embed.src} style={{ width: "100%", height: "100%" }} frameBorder={0} allow="autoplay; encrypted-media" allowFullScreen scrolling="no" />
                       </div>
-                      <a href={selectedEvent.videoUrl} target="_blank" rel="noopener" className="btn-secondary" style={{ display: "inline-flex", alignItems: "center", gap: "6px", padding: "6px 14px", textDecoration: "none", fontSize: "0.82rem" }}>
-                        🔗 Abrir en {embed.type === "youtube" ? "YouTube" : "Instagram"}
-                      </a>
+                      <a href={selectedEvent.videoUrl} target="_blank" rel="noopener" style={{ display: "inline-block", color: "#818cf8", fontSize: "0.82rem" }}>🎥 Abrir en {embed.type === "youtube" ? "YouTube" : "Instagram"}</a>
                     </div>
                   );
                 }

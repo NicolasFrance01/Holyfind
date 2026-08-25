@@ -152,11 +152,14 @@ export default function ChurchDetailModal({ church, onClose, userId, followingCh
           )}
 
           {/* Tabs */}
-          <div style={{ display: "flex", gap: "4px", borderBottom: "1px solid var(--border)", marginBottom: "18px", overflowX: "auto" }}>
+          <div style={{ display: "flex", gap: "4px", borderBottom: "1px solid var(--border)", marginBottom: "18px", overflowX: "auto", paddingBottom: "4px" }}>
             {tabBtn("info", "ℹ️ Info")}
             {tabBtn("eventos", `📅 Eventos (${church.events?.length || 0})`)}
             {tabBtn("actividades", `🏃 Actividades (${church.activities?.length || 0})`)}
-            {tabBtn("comentarios", `💬 Comentarios (${church.comments?.filter((c: any) => c.isVisible).length || 0})`)}
+            {tabBtn("devocionales", "📖 Devocionales")}
+            {tabBtn("oraciones", "🙏 Oración")}
+            {tabBtn("foro", "💬 Foro")}
+            {tabBtn("comentarios", `⭐ Reseñas (${church.comments?.filter((c: any) => c.isVisible).length || 0})`)}
           </div>
 
           {/* Tab: Info */}
@@ -199,8 +202,8 @@ export default function ChurchDetailModal({ church, onClose, userId, followingCh
                       if (embed) {
                         return (
                           <div style={{ marginBottom: "8px" }}>
-                            <div style={{ borderRadius: "8px", overflow: "hidden", position: "relative", paddingTop: embed.type === "youtube" ? "56.25%" : "120%", marginBottom: "4px" }}>
-                              <iframe src={embed.src} style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%" }} frameBorder={0} allowFullScreen scrolling="no" />
+                            <div style={{ borderRadius: "8px", overflow: "hidden", height: "180px", maxWidth: "320px", marginBottom: "4px", background: "#000" }}>
+                              <iframe src={embed.src} style={{ width: "100%", height: "100%" }} frameBorder={0} allowFullScreen scrolling="no" />
                             </div>
                             <a href={ev.videoUrl} target="_blank" rel="noopener" style={{ display: "inline-block", color: "#818cf8", fontSize: "0.82rem" }}>🎥 Abrir en {embed.type === "youtube" ? "YouTube" : "Instagram"}</a>
                           </div>
@@ -248,6 +251,33 @@ export default function ChurchDetailModal({ church, onClose, userId, followingCh
                   </div>
                 );
               })}
+            </div>
+          )}
+
+          {/* Tab: Devocionales (Stub) */}
+          {tab === "devocionales" && (
+            <div style={{ padding: "30px", textAlign: "center" }}>
+              <div style={{ fontSize: "3rem", marginBottom: "10px" }}>📖</div>
+              <h3 style={{ color: "white" }}>Próximamente</h3>
+              <p style={{ color: "var(--text-secondary)" }}>Aquí podrás leer los devocionales compartidos por esta iglesia.</p>
+            </div>
+          )}
+
+          {/* Tab: Oraciones (Stub) */}
+          {tab === "oraciones" && (
+            <div style={{ padding: "30px", textAlign: "center" }}>
+              <div style={{ fontSize: "3rem", marginBottom: "10px" }}>🙏</div>
+              <h3 style={{ color: "white" }}>Próximamente</h3>
+              <p style={{ color: "var(--text-secondary)" }}>Podrás enviar peticiones de oración directamente a la iglesia.</p>
+            </div>
+          )}
+
+          {/* Tab: Foro (Stub) */}
+          {tab === "foro" && (
+            <div style={{ padding: "30px", textAlign: "center" }}>
+              <div style={{ fontSize: "3rem", marginBottom: "10px" }}>💬</div>
+              <h3 style={{ color: "white" }}>Próximamente</h3>
+              <p style={{ color: "var(--text-secondary)" }}>Un espacio para charlar y conectar con la comunidad de esta iglesia.</p>
             </div>
           )}
 

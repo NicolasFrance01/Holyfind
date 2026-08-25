@@ -260,11 +260,11 @@ export default function UserDashboardClient({ user, followedChurches, savedEvent
                               const embed = embedUrl(ev.videoUrl);
                               if (embed) {
                                 return (
-                                  <div style={{ marginBottom: "10px" }}>
-                                    <div style={{ borderRadius: "8px", overflow: "hidden", position: "relative", paddingTop: embed.type === "youtube" ? "56.25%" : "120%", marginBottom: "8px" }}>
-                                      <iframe src={embed.src} style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%" }} frameBorder={0} allowFullScreen scrolling="no" />
+                                  <div style={{ marginBottom: "8px" }}>
+                                    <div style={{ borderRadius: "8px", overflow: "hidden", height: "180px", maxWidth: "320px", marginBottom: "4px", background: "#000" }}>
+                                      <iframe src={embed.src} style={{ width: "100%", height: "100%" }} frameBorder={0} allowFullScreen scrolling="no" />
                                     </div>
-                                    <a href={ev.videoUrl} target="_blank" rel="noopener" className="btn-secondary" style={{ display: "inline-block", padding: "6px 14px", fontSize: "0.8rem", textDecoration: "none" }}>🎥 Abrir en {embed.type === "youtube" ? "YouTube" : "Instagram"}</a>
+                                    <a href={ev.videoUrl} target="_blank" rel="noopener" style={{ display: "inline-block", color: "#818cf8", fontSize: "0.82rem" }}>🎥 Abrir en {embed.type === "youtube" ? "YouTube" : "Instagram"}</a>
                                   </div>
                                 );
                               }
