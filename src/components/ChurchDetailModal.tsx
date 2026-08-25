@@ -6,9 +6,14 @@ import { toggleFollowChurch, toggleEventLike, toggleEventSave, addComment, track
 
 const DAY_MAP: Record<string, string> = { MONDAY: "Lun", TUESDAY: "Mar", WEDNESDAY: "Mié", THURSDAY: "Jue", FRIDAY: "Vie", SATURDAY: "Sáb", SUNDAY: "Dom" };
 
-function embedUrl(url: string): string | null {
+function embedUrl(url: string): { src: string; type: "youtube" | "instagram" } | null {
+  if (!url) return null;
   const yt = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&?]+)/);
-  if (yt) return `https://www.youtube.com/embed/${yt[1]}`;
+  if (yt) return { src: `https://www.youtube.com/embed/${yt[1]}?rel=0`, type: "youtube" };
+  const ytShort = url.match(/youtube\.com\/shorts\/([^?&/]+)/);
+  if (ytShort) return { src: `https://www.youtube.com/embed/${ytShort[1]}`, type: "youtube" };
+  const ig = url.match(/instagram\.com\/(?:p|reel|tv)\/([^/?]+)/);
+  if (ig) return { src: `https://www.instagram.com/p/${ig[1]}/embed/`, type: "instagram" };
   return null;
 }
 
@@ -186,11 +191,20 @@ export default function ChurchDetailModal({ church, onClose, userId, followingCh
                         {ev.media.map((m: any, i: number) => <img key={i} src={m.url} alt="" style={{ height: "60px", width: "80px", objectFit: "contain", background: "rgba(0,0,0,0.3)", borderRadius: "6px", flexShrink: 0 }} />)}
                       </div>
                     )}
-                    {ev.videoUrl && (
-                      embedUrl(ev.videoUrl)
-                        ? <div style={{ borderRadius: "8px", overflow: "hidden", position: "relative", paddingTop: "40%", marginBottom: "8px" }}><iframe src={embedUrl(ev.videoUrl)!} style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%" }} frameBorder={0} allowFullScreen /></div>
-                        : <a href={ev.videoUrl} target="_blank" rel="noopener" style={{ display: "inline-block", marginBottom: "8px", color: "#818cf8", fontSize: "0.82rem" }}>🎥 Ver Video</a>
-                    )}
+                    {ev.videoUrl && (() => {
+                      const embed = embedUrl(ev.videoUrl);
+                      if (embed) {
+                        return (
+                          <div style={{ marginBottom: "8px" }}>
+                            <div style={{ borderRadius: "8px", overflow: "hidden", position: "relative", paddingTop: embed.type === "youtube" ? "56.25%" : "120%", marginBottom: "4px" }}>
+                              <iframe src={embed.src} style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%" }} frameBorder={0} allowFullScreen scrolling="no" />
+                            </div>
+                            <a href={ev.videoUrl} target="_blank" rel="noopener" style={{ display: "inline-block", color: "#818cf8", fontSize: "0.82rem" }}>🎥 Abrir en {embed.type === "youtube" ? "YouTube" : "Instagram"}</a>
+                          </div>
+                        );
+                      }
+                      return <a href={ev.videoUrl} target="_blank" rel="noopener" style={{ display: "inline-block", marginBottom: "8px", color: "#818cf8", fontSize: "0.82rem" }}>🎥 Ver Video asociado</a>;
+                    })()}
                     <div style={{ display: "flex", gap: "6px" }}>
                       <button onClick={() => doLike(ev.id)} disabled={isPending} style={{ flex: 1, padding: "6px", borderRadius: "7px", border: "1px solid", cursor: "pointer", fontSize: "0.8rem", fontWeight: 600, background: localLikes.has(ev.id) ? "rgba(239,68,68,0.2)" : "transparent", color: localLikes.has(ev.id) ? "#f87171" : "var(--text-secondary)", borderColor: localLikes.has(ev.id) ? "rgba(239,68,68,0.4)" : "var(--border)" }}>
                         {localLikes.has(ev.id) ? "❤️" : "🤍"} {ev.likes?.length || 0}

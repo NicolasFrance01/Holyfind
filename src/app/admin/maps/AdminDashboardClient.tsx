@@ -27,7 +27,7 @@ const defaultForm: ChurchFormData = {
   name: "", address: "", type: "Católica", latitude: null, longitude: null, description: ""
 };
 
-export default function AdminDashboardClient({ churches, users, normalUsers }: { churches: any[], users: any[], normalUsers?: any[] }) {
+export default function AdminDashboardClient({ churches, users, normalUsers, allEvents = [], allActivities = [] }: { churches: any[], users: any[], normalUsers?: any[], allEvents?: any[], allActivities?: any[] }) {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState("iglesias");
   const [isPending, startTransition] = useTransition();
@@ -155,6 +155,20 @@ export default function AdminDashboardClient({ churches, users, normalUsers }: {
               onClick={() => setActiveTab("normal_users")}
             >
               Gestión de Usuarios
+            </button>
+            <button 
+              className={`btn-secondary ${activeTab === "eventos" ? "active" : ""}`} 
+              style={activeTab === "eventos" ? { background: "var(--primary-color)", borderColor: "var(--primary-color)", color: "white" } : {}}
+              onClick={() => setActiveTab("eventos")}
+            >
+              Gestión de Eventos
+            </button>
+            <button 
+              className={`btn-secondary ${activeTab === "actividades" ? "active" : ""}`} 
+              style={activeTab === "actividades" ? { background: "var(--primary-color)", borderColor: "var(--primary-color)", color: "white" } : {}}
+              onClick={() => setActiveTab("actividades")}
+            >
+              Gestión de Actividades
             </button>
           </div>
 
@@ -338,6 +352,83 @@ export default function AdminDashboardClient({ churches, users, normalUsers }: {
                             </button>
                             <button className="btn-secondary" style={{ padding: "4px 10px", fontSize: "0.8rem", color: "#6366f1", borderColor: "rgba(99, 102, 241, 0.5)" }} onClick={() => handleEditUser(u)}>Editar</button>
                             <button className="btn-secondary" style={{ padding: "4px 10px", fontSize: "0.8rem", color: "#ef4444", borderColor: "rgba(239, 68, 68, 0.5)" }} onClick={() => setUserToDelete(u)}>Eliminar</button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          )}
+          {activeTab === "eventos" && (
+            <div className="glass-panel" style={{ padding: "30px", marginTop: "20px" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "20px", alignItems: "center" }}>
+                <h2 style={{ fontSize: "1.8rem" }}>Eventos Registrados</h2>
+                <button className="btn-primary" style={{ padding: "8px 16px", fontSize: "0.9rem" }}>+ Nuevo Evento</button>
+              </div>
+              {allEvents.length === 0 ? (
+                <p style={{ color: "var(--text-secondary)" }}>No hay eventos registrados.</p>
+              ) : (
+                <div style={{ overflowX: "auto" }}>
+                  <table style={{ width: "100%", borderCollapse: "collapse", color: "white", minWidth: "600px" }}>
+                    <thead>
+                      <tr style={{ borderBottom: "1px solid var(--glass-border)", textAlign: "left" }}>
+                        <th style={{ padding: "12px" }}>Título</th>
+                        <th style={{ padding: "12px" }}>Tipo</th>
+                        <th style={{ padding: "12px" }}>Iglesia Asociada</th>
+                        <th style={{ padding: "12px" }}>Fecha</th>
+                        <th style={{ padding: "12px" }}>Acciones</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {allEvents.map((ev: any) => (
+                        <tr key={ev.id} style={{ borderBottom: "1px solid var(--glass-border)" }}>
+                          <td style={{ padding: "12px", fontWeight: 600 }}>{ev.title}</td>
+                          <td style={{ padding: "12px", color: "var(--text-secondary)" }}>{ev.type}</td>
+                          <td style={{ padding: "12px", color: "var(--text-secondary)" }}>{ev.church?.name || "-"}</td>
+                          <td style={{ padding: "12px", color: "var(--text-secondary)" }}>{new Date(ev.eventDate).toLocaleDateString("es-AR")}</td>
+                          <td style={{ padding: "12px", display: "flex", gap: "8px" }}>
+                            <button className="btn-secondary" style={{ padding: "4px 10px", fontSize: "0.8rem" }}>Editar</button>
+                            <button className="btn-secondary" style={{ padding: "4px 10px", fontSize: "0.8rem", color: "#ef4444", borderColor: "rgba(239, 68, 68, 0.5)" }}>Eliminar</button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          )}
+
+          {activeTab === "actividades" && (
+            <div className="glass-panel" style={{ padding: "30px", marginTop: "20px" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "20px", alignItems: "center" }}>
+                <h2 style={{ fontSize: "1.8rem" }}>Actividades Registradas</h2>
+                <button className="btn-primary" style={{ padding: "8px 16px", fontSize: "0.9rem" }}>+ Nueva Actividad</button>
+              </div>
+              {allActivities.length === 0 ? (
+                <p style={{ color: "var(--text-secondary)" }}>No hay actividades registradas.</p>
+              ) : (
+                <div style={{ overflowX: "auto" }}>
+                  <table style={{ width: "100%", borderCollapse: "collapse", color: "white", minWidth: "600px" }}>
+                    <thead>
+                      <tr style={{ borderBottom: "1px solid var(--glass-border)", textAlign: "left" }}>
+                        <th style={{ padding: "12px" }}>Título</th>
+                        <th style={{ padding: "12px" }}>Iglesia Asociada</th>
+                        <th style={{ padding: "12px" }}>Estado</th>
+                        <th style={{ padding: "12px" }}>Acciones</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {allActivities.map((act: any) => (
+                        <tr key={act.id} style={{ borderBottom: "1px solid var(--glass-border)" }}>
+                          <td style={{ padding: "12px", fontWeight: 600 }}>{act.title}</td>
+                          <td style={{ padding: "12px", color: "var(--text-secondary)" }}>{act.church?.name || "-"}</td>
+                          <td style={{ padding: "12px", color: act.isActive ? "#10b981" : "#ef4444" }}>{act.isActive ? "Activo" : "Inactivo"}</td>
+                          <td style={{ padding: "12px", display: "flex", gap: "8px" }}>
+                            <button className="btn-secondary" style={{ padding: "4px 10px", fontSize: "0.8rem" }}>Editar</button>
+                            <button className="btn-secondary" style={{ padding: "4px 10px", fontSize: "0.8rem", color: "#ef4444", borderColor: "rgba(239, 68, 68, 0.5)" }}>Eliminar</button>
                           </td>
                         </tr>
                       ))}

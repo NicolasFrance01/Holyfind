@@ -32,7 +32,17 @@ export default async function AdminMapsPage() {
     orderBy: { createdAt: "desc" },
   });
 
+  const allEvents = await prisma.event.findMany({
+    include: { church: true },
+    orderBy: { eventDate: "desc" },
+  });
+
+  const allActivities = await prisma.activity.findMany({
+    include: { church: true },
+    orderBy: { createdAt: "desc" },
+  });
+
   return (
-    <AdminDashboardClient churches={churches} users={users} normalUsers={normalUsers} />
+    <AdminDashboardClient churches={churches} users={users} normalUsers={normalUsers} allEvents={allEvents} allActivities={allActivities} />
   );
 }

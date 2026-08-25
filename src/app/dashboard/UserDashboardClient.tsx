@@ -10,6 +10,17 @@ const MARITAL_STATUS = ["SOLTERO", "CASADO", "DIVORCIADO", "VIUDO", "OTRO"];
 const MARITAL_LABELS: Record<string, string> = { SOLTERO: "Soltero/a", CASADO: "Casado/a", DIVORCIADO: "Divorciado/a", VIUDO: "Viudo/a", OTRO: "Otro" };
 type Section = "perfil" | "miIglesia" | "guardados" | "actividades";
 
+function embedUrl(url: string): { src: string; type: "youtube" | "instagram" } | null {
+  if (!url) return null;
+  const yt = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&?]+)/);
+  if (yt) return { src: `https://www.youtube.com/embed/${yt[1]}?rel=0`, type: "youtube" };
+  const ytShort = url.match(/youtube\.com\/shorts\/([^?&/]+)/);
+  if (ytShort) return { src: `https://www.youtube.com/embed/${ytShort[1]}`, type: "youtube" };
+  const ig = url.match(/instagram\.com\/(?:p|reel|tv)\/([^/?]+)/);
+  if (ig) return { src: `https://www.instagram.com/p/${ig[1]}/embed/`, type: "instagram" };
+  return null;
+}
+
 export default function UserDashboardClient({ user, followedChurches, savedEvents, savedActivities, likedEventIds, savedEventIds }: {
   user: any; followedChurches: any[]; savedEvents: any[]; savedActivities: any[];
   likedEventIds: string[]; savedEventIds: string[];
@@ -245,9 +256,22 @@ export default function UserDashboardClient({ user, followedChurches, savedEvent
                                 {ev.media.map((m: any, i: number) => <img key={i} src={m.url} alt="" style={{ height: "70px", width: "90px", objectFit: "contain", background: "rgba(0,0,0,0.3)", borderRadius: "8px", flexShrink: 0 }} />)}
                               </div>
                             )}
-                            {ev.videoUrl && (
-                              <a href={ev.videoUrl} target="_blank" rel="noopener" className="btn-secondary" style={{ display: "inline-block", padding: "6px 14px", fontSize: "0.8rem", textDecoration: "none" }}>🎥 Ver Video asociado</a>
-                            )}
+                            {ev.videoUrl && (() => {
+                              const embed = embedUrl(ev.videoUrl);
+                              if (embed) {
+                                return (
+                                  <div style={{ marginBottom: "10px" }}>
+                                    <div style={{ borderRadius: "8px", overflow: "hidden", position: "relative", paddingTop: embed.type === "youtube" ? "56.25%" : "120%", marginBottom: "8px" }}>
+                                      <iframe src={embed.src} style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%" }} frameBorder={0} allowFullScreen scrolling="no" />
+                                    </div>
+                                    <a href={ev.videoUrl} target="_blank" rel="noopener" className="btn-secondary" style={{ display: "inline-block", padding: "6px 14px", fontSize: "0.8rem", textDecoration: "none" }}>🎥 Abrir en {embed.type === "youtube" ? "YouTube" : "Instagram"}</a>
+                                  </div>
+                                );
+                              }
+                              return (
+                                <a href={ev.videoUrl} target="_blank" rel="noopener" className="btn-secondary" style={{ display: "inline-block", padding: "6px 14px", fontSize: "0.8rem", textDecoration: "none" }}>🎥 Ver Video asociado</a>
+                              );
+                            })()}
                           </div>
                         ))}
                       </div>

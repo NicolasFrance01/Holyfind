@@ -9,17 +9,15 @@ const EVENT_EMOJI: Record<string, string> = {
   BAUTISMO: "💧", BODA: "💍", CONGRESO: "🤝", OTRO: "📅"
 };
 
-function embedUrl(url: string): string | null {
+function embedUrl(url: string): { src: string; type: "youtube" | "instagram" } | null {
   if (!url) return null;
   const yt = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&?]+)/);
-  if (yt) return `https://www.youtube.com/embed/${yt[1]}?rel=0`;
+  if (yt) return { src: `https://www.youtube.com/embed/${yt[1]}?rel=0`, type: "youtube" };
   const ytShort = url.match(/youtube\.com\/shorts\/([^?&/]+)/);
-  if (ytShort) return `https://www.youtube.com/embed/${ytShort[1]}`;
+  if (ytShort) return { src: `https://www.youtube.com/embed/${ytShort[1]}`, type: "youtube" };
+  const ig = url.match(/instagram\.com\/(?:p|reel|tv)\/([^/?]+)/);
+  if (ig) return { src: `https://www.instagram.com/p/${ig[1]}/embed/`, type: "instagram" };
   return null;
-}
-
-function isInstagram(url: string): boolean {
-  return /instagram\.com\/(p|reel|tv)\//.test(url);
 }
 
 function getInstagramPostId(url: string): string | null {
@@ -82,27 +80,7 @@ export default function EventsPanel({ events, userId, likedEventIds = [], savedE
   const regularEvents = filtered.filter(ev => !isNew(ev) && !isPopular(ev));
   const savedEvents = filtered.filter(isSaved);
 
-  // Load Instagram embed script
-  useEffect(() => {
-    if (selectedEvent?.videoUrl && isInstagram(selectedEvent.videoUrl)) {
-      const processIg = () => {
-        if ((window as any).instgrm) {
-          (window as any).instgrm.Embeds.process();
-        }
-      };
-
-      if ((window as any).instgrm) {
-        // Need a small timeout for React to mount the blockquote
-        setTimeout(processIg, 100);
-      } else {
-        const script = document.createElement("script");
-        script.src = "//www.instagram.com/embed.js";
-        script.async = true;
-        script.onload = () => setTimeout(processIg, 100);
-        document.body.appendChild(script);
-      }
-    }
-  }, [selectedEvent]);
+  // Removed instagram blockquote processing script since we use iframe
 
   useEffect(() => { if (selectedEvent) setCarouselIdx(0); }, [selectedEvent]);
 
@@ -309,36 +287,28 @@ export default function EventsPanel({ events, userId, likedEventIds = [], savedE
               )}
 
               {/* Video embed */}
-              {selectedEvent.videoUrl && (
-                <div style={{ marginBottom: "16px" }}>
-                  {embedUrl(selectedEvent.videoUrl) ? (
-                    <>
-                      <div style={{ borderRadius: "12px", overflow: "hidden", position: "relative", paddingTop: "56.25%", marginBottom: "8px" }}>
-                        <iframe src={embedUrl(selectedEvent.videoUrl)!} style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%" }} frameBorder={0} allow="autoplay; encrypted-media" allowFullScreen />
+              {selectedEvent.videoUrl && (() => {
+                const embed = embedUrl(selectedEvent.videoUrl);
+                if (embed) {
+                  return (
+                    <div style={{ marginBottom: "16px" }}>
+                      <div style={{ borderRadius: "12px", overflow: "hidden", position: "relative", paddingTop: embed.type === "youtube" ? "56.25%" : "120%", marginBottom: "8px" }}>
+                        <iframe src={embed.src} style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%" }} frameBorder={0} allow="autoplay; encrypted-media" allowFullScreen scrolling="no" />
                       </div>
                       <a href={selectedEvent.videoUrl} target="_blank" rel="noopener" className="btn-secondary" style={{ display: "inline-flex", alignItems: "center", gap: "6px", padding: "6px 14px", textDecoration: "none", fontSize: "0.82rem" }}>
-                        🔗 Abrir en YouTube
+                        🔗 Abrir en {embed.type === "youtube" ? "YouTube" : "Instagram"}
                       </a>
-                    </>
-                  ) : isInstagram(selectedEvent.videoUrl) ? (
-                    <>
-                      <blockquote
-                        className="instagram-media"
-                        data-instgrm-permalink={selectedEvent.videoUrl}
-                        data-instgrm-version="14"
-                        style={{ background: "#FFF", border: 0, borderRadius: "12px", margin: "0 0 8px", maxWidth: "100%", minWidth: "326px", padding: 0, width: "calc(100% - 2px)" }}
-                      />
-                      <a href={selectedEvent.videoUrl} target="_blank" rel="noopener" className="btn-secondary" style={{ display: "inline-flex", alignItems: "center", gap: "6px", padding: "6px 14px", textDecoration: "none", fontSize: "0.82rem" }}>
-                        🔗 Abrir en Instagram
-                      </a>
-                    </>
-                  ) : (
+                    </div>
+                  );
+                }
+                return (
+                  <div style={{ marginBottom: "16px" }}>
                     <a href={selectedEvent.videoUrl} target="_blank" rel="noopener" className="btn-secondary" style={{ display: "inline-flex", alignItems: "center", gap: "6px", padding: "8px 16px", textDecoration: "none", fontSize: "0.85rem" }}>
-                      🎥 Ver Video
+                      🎥 Ver Video asociado
                     </a>
-                  )}
-                </div>
-              )}
+                  </div>
+                );
+              })()}
 
               {/* Social links of church */}
               {selectedEvent.church && (selectedEvent.church.instagram || selectedEvent.church.youtube || selectedEvent.church.facebook || selectedEvent.church.whatsapp || selectedEvent.church.website || selectedEvent.church.phone) && (
